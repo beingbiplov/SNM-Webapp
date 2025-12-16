@@ -17,6 +17,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <java.version>17</java.version>
+    <shark.version>0.1.0</shark.version>
   </properties>
 
   <dependencies>
@@ -54,6 +55,38 @@
       <artifactId>junit-jupiter</artifactId>
       <version>5.10.1</version>
       <scope>test</scope>
+    </dependency>
+
+    <!-- ASAP Hub -->
+    <dependency>
+      <groupId>net.sharksystem</groupId>
+      <artifactId>ASAPHub</artifactId>
+      <version>${shark.version}</version>
+
+    </dependency>
+
+    <!-- ASAP Java-->
+    <dependency>
+      <groupId>net.sharksystem</groupId>
+      <artifactId>ASAPJava</artifactId>
+      <version>${shark.version}</version>
+
+    </dependency>
+
+    <!-- Shark Peer -->
+    <dependency>
+      <groupId>net.sharksystem</groupId>
+      <artifactId>SharkPeer</artifactId>
+      <version>${shark.version}</version>
+
+    </dependency>
+
+    <!-- Shark PKI -->
+    <dependency>
+      <groupId>net.sharksystem</groupId>
+      <artifactId>SharkPKI</artifactId>
+      <version>${shark.version}</version>
+
     </dependency>
 
   </dependencies>

@@ -8,10 +8,10 @@
                              https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
          version="6.0">
 
-  <display-name>SNM Webapp</display-name>
+  <display-name>SharkNet Messenger Web App</display-name>
 
   <servlet>
-    <servlet-name>HellodServlet</servlet-name>
+    <servlet-name>HelloServlet</servlet-name>
     <servlet-class>net.sharksystem.web.api.HelloServlet</servlet-class>
   </servlet>
 
