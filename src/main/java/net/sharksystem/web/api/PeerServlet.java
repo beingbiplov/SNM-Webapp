@@ -75,4 +75,35 @@ public class PeerServlet extends HttpServlet {
         json.append("]");
         resp.getWriter().write(json.toString());
     }
+
+    @Override
+protected void doDelete(HttpServletRequest req, HttpServletResponse resp)
+        throws IOException {
+
+    String peerID;
+    try (BufferedReader reader = req.getReader()) {
+        peerID = reader.readLine();
+    }
+
+    if (peerID == null || peerID.isBlank()) {
+        resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        resp.getWriter().write("Peer ID required in request body");
+        return;
+    }
+
+    try {
+        boolean removed = manager.removePeer(peerID.trim());
+        if (removed) {
+            resp.setStatus(HttpServletResponse.SC_OK);
+            resp.getWriter().write("Peer stopped: " + peerID);
+        } else {
+            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            resp.getWriter().write("Peer not found: " + peerID);
+        }
+    } catch (Exception e) {
+        resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        resp.getWriter().write(e.getMessage());
+    }
+}
+
 }
