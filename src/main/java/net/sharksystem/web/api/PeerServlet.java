@@ -9,6 +9,10 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.io.BufferedReader;
@@ -20,27 +24,47 @@ import java.io.BufferedReader;
 public class PeerServlet extends HttpServlet {
 
     private final PeerRuntimeManager manager = PeerRuntimeManager.getInstance();
+    private final Gson gson = new Gson();
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        // Read raw body (plain text)
-        String peerName;
+        JsonObject body;
+
         try (BufferedReader reader = req.getReader()) {
-            peerName = reader.readLine();
+            body = gson.fromJson(reader, JsonObject.class);
+        } catch (JsonSyntaxException e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("Invalid JSON body");
+            return;
         }
 
-        if (peerName == null || peerName.isBlank()) {
+        // Type + presence check
+        if (body == null || !body.has("name") || !body.get("name").isJsonPrimitive()) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Peer name required in request body");
+            resp.getWriter().write("Missing or invalid 'name'");
+            return;
+        }
+
+        String peerName = body.get("name").getAsString().trim();
+        if (peerName.isEmpty()) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("Peer name cannot be empty");
             return;
         }
 
         try {
-            manager.createPeer(peerName.trim());
+            PeerRuntime peer = manager.createPeer(peerName);
+
+            JsonObject response = new JsonObject();
+            response.addProperty("name", peer.getPeerName());
+            response.addProperty("peerId", peer.getPeerID().toString());
+
             resp.setStatus(HttpServletResponse.SC_CREATED);
-            resp.getWriter().write("Peer created: " + peerName);
+            resp.setContentType("application/json");
+            resp.getWriter().write(gson.toJson(response));
+
         } catch (Exception e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().write(e.getMessage());
@@ -56,54 +80,59 @@ public class PeerServlet extends HttpServlet {
         resp.setContentType("application/json");
         resp.setStatus(HttpServletResponse.SC_OK);
 
-        StringBuilder json = new StringBuilder();
-        json.append("[");
+        var array = new com.google.gson.JsonArray();
 
-        boolean first = true;
         for (PeerRuntime peer : peers) {
-            if (!first) {
-                json.append(",");
-            }
-            first = false;
-
-            json.append("{")
-                .append("\"name\":\"").append(peer.getPeerName()).append("\",")
-                .append("\"peerId\":\"").append(peer.getPeerID()).append("\"")
-                .append("}");
+            JsonObject obj = new JsonObject();
+            obj.addProperty("name", peer.getPeerName());
+            obj.addProperty("peerId", peer.getPeerID().toString());
+            array.add(obj);
         }
 
-        json.append("]");
-        resp.getWriter().write(json.toString());
+        resp.getWriter().write(gson.toJson(array));
     }
 
     @Override
-protected void doDelete(HttpServletRequest req, HttpServletResponse resp)
-        throws IOException {
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
 
-    String peerID;
-    try (BufferedReader reader = req.getReader()) {
-        peerID = reader.readLine();
-    }
+        JsonObject body;
 
-    if (peerID == null || peerID.isBlank()) {
-        resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        resp.getWriter().write("Peer ID required in request body");
-        return;
-    }
-
-    try {
-        boolean removed = manager.removePeer(peerID.trim());
-        if (removed) {
-            resp.setStatus(HttpServletResponse.SC_OK);
-            resp.getWriter().write("Peer stopped: " + peerID);
-        } else {
-            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            resp.getWriter().write("Peer not found: " + peerID);
+        try (BufferedReader reader = req.getReader()) {
+            body = gson.fromJson(reader, JsonObject.class);
+        } catch (JsonSyntaxException e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("Invalid JSON body");
+            return;
         }
-    } catch (Exception e) {
-        resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        resp.getWriter().write(e.getMessage());
-    }
-}
 
+        // Type + presence check
+        if (body == null || !body.has("peerId") || !body.get("peerId").isJsonPrimitive()) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("Missing or invalid 'peerId'");
+            return;
+        }
+
+        String peerID = body.get("peerId").getAsString().trim();
+        if (peerID.isEmpty()) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("Peer ID cannot be empty");
+            return;
+        }
+
+        try {
+            boolean removed = manager.removePeer(peerID);
+
+            if (removed) {
+                resp.setStatus(HttpServletResponse.SC_OK);
+                resp.getWriter().write("Peer stopped: " + peerID);
+            } else {
+                resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                resp.getWriter().write("Peer not found: " + peerID);
+            }
+        } catch (Exception e) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            resp.getWriter().write(e.getMessage());
+        }
+    }
 }
