@@ -20,12 +20,17 @@ import java.io.BufferedReader;
 /**
  * API for managing peers.
  */
-@WebServlet("/api/peer")
+@WebServlet("/api/peer/*")
 public class PeerServlet extends HttpServlet {
 
     private final PeerRuntimeManager manager = PeerRuntimeManager.getInstance();
     private final Gson gson = new Gson();
 
+    /**
+     * CREATE peer
+     * POST /api/peer
+     * Body: { "name": "alice" }
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
@@ -71,27 +76,67 @@ public class PeerServlet extends HttpServlet {
         }
     }
 
+    /**
+     * LIST peers OR GET peer by ID
+     *
+     * GET /api/peer
+     * GET /api/peer/{peerId}
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        Collection<PeerRuntime> peers = manager.listPeers();
+        String pathInfo = req.getPathInfo();
+
+        if (pathInfo == null || pathInfo.equals("/")) {
+
+            Collection<PeerRuntime> peers = manager.listPeers();
+
+            resp.setContentType("application/json");
+            resp.setStatus(HttpServletResponse.SC_OK);
+
+            var array = new com.google.gson.JsonArray();
+            for (PeerRuntime peer : peers) {
+                JsonObject obj = new JsonObject();
+                obj.addProperty("name", peer.getPeerName());
+                obj.addProperty("peerId", peer.getPeerID().toString());
+                array.add(obj);
+            }
+
+            resp.getWriter().write(array.toString());
+            return;
+        }
+
+        String peerId = pathInfo.substring(1); // remove leading "/"
+
+        if (peerId.isBlank()) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().write("Peer ID required");
+            return;
+        }
+
+        PeerRuntime peer = manager.getPeer(peerId);
+
+        if (peer == null) {
+            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            resp.getWriter().write("Peer not found");
+            return;
+        }
+
+        JsonObject obj = new JsonObject();
+        obj.addProperty("name", peer.getPeerName());
+        obj.addProperty("peerId", peer.getPeerID().toString());
 
         resp.setContentType("application/json");
         resp.setStatus(HttpServletResponse.SC_OK);
-
-        var array = new com.google.gson.JsonArray();
-
-        for (PeerRuntime peer : peers) {
-            JsonObject obj = new JsonObject();
-            obj.addProperty("name", peer.getPeerName());
-            obj.addProperty("peerId", peer.getPeerID().toString());
-            array.add(obj);
-        }
-
-        resp.getWriter().write(gson.toJson(array));
+        resp.getWriter().write(obj.toString());
     }
 
+    /**
+     * DELETE peer
+     * DELETE /api/peer
+     * Body: { "peerId": "alice_xxx" }
+     */
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp)
             throws IOException {
