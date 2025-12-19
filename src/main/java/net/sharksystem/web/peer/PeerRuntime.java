@@ -1,5 +1,8 @@
 package net.sharksystem.web.peer;
 
+import java.io.File;
+import java.io.IOException;
+
 import net.sharksystem.SharkException;
 import net.sharksystem.SharkPeerFS;
 import net.sharksystem.asap.ASAPPeer;
@@ -8,17 +11,17 @@ import net.sharksystem.asap.utils.PeerIDHelper;
 import net.sharksystem.asap.crypto.ASAPKeyStore;
 import net.sharksystem.asap.crypto.InMemoASAPKeyStore;
 
-import java.io.File;
-import java.io.IOException;
-
 /**
- * Represents one running SharkNet peer in the web application.
+ * Represents one SharkNet peer in the web application.
  */
 public final class PeerRuntime {
 
     private final String peerName;
     private final CharSequence peerID;
     private final SharkPeerFS sharkPeer;
+    private final ASAPPeer asapPeer;
+
+    private boolean active = false;
 
     public PeerRuntime(String peerName) throws SharkException, IOException {
         this.peerName = peerName;
@@ -29,11 +32,9 @@ public final class PeerRuntime {
         String dataDir = "./data/" + peerName;
         new File(dataDir).mkdirs();
 
-        // Create Shark peer
         this.sharkPeer = new SharkPeerFS(peerName, dataDir);
 
-        // Create ASAP peer
-        ASAPPeer asapPeer = new ASAPPeerFS(
+        this.asapPeer = new ASAPPeerFS(
                 peerID,
                 dataDir,
                 sharkPeer.getSupportedFormats()
@@ -42,8 +43,28 @@ public final class PeerRuntime {
         ASAPKeyStore keyStore = new InMemoASAPKeyStore(peerID);
         asapPeer.setASAPKeyStore(keyStore);
 
-        // Start Shark peer
-        sharkPeer.start(asapPeer);
+        // DO NOT start here
+        this.active = false;
+    }
+
+    /** Activate (start) the peer */
+    public void activate() throws SharkException {
+        if (!active) {
+            sharkPeer.start(asapPeer);
+            active = true;
+        }
+    }
+
+    /** Stop the peer */
+    public void shutdown() throws SharkException {
+        if (active) {
+            sharkPeer.stop();
+            active = false;
+        }
+    }
+
+    public boolean isActive() {
+        return active;
     }
 
     public String getPeerName() {
@@ -52,9 +73,5 @@ public final class PeerRuntime {
 
     public CharSequence getPeerID() {
         return peerID;
-    }
-
-    public void shutdown() throws SharkException {
-        sharkPeer.stop();
     }
 }

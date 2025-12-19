@@ -100,6 +100,7 @@ public class PeerServlet extends HttpServlet {
                 JsonObject obj = new JsonObject();
                 obj.addProperty("name", peer.getPeerName());
                 obj.addProperty("peerId", peer.getPeerID().toString());
+                obj.addProperty("active", peer.isActive());
                 array.add(obj);
             }
 

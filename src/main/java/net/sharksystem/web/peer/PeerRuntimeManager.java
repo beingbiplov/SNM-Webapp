@@ -19,7 +19,9 @@ public final class PeerRuntimeManager {
     private final Map<String, PeerRuntime> peersById = new ConcurrentHashMap<>();
 
     private PeerRuntimeManager() {
+        restorePeers();
     }
+
 
     public static PeerRuntimeManager getInstance() {
         return INSTANCE;
@@ -32,8 +34,11 @@ public final class PeerRuntimeManager {
             throws SharkException, IOException {
 
         PeerRuntime runtime = new PeerRuntime(peerName);
+        runtime.activate();
         String peerID = runtime.getPeerID().toString().trim(); // normalize
         peersById.put(peerID, runtime);
+        PeerRegistryStore.save(peersById.values());
+
         return runtime;
     }
 
@@ -42,12 +47,16 @@ public final class PeerRuntimeManager {
      */
     public boolean removePeer(String peerID) throws SharkException {
         if (peerID == null) return false;
+
         String normalizedId = peerID.trim(); // normalize input
         PeerRuntime runtime = peersById.remove(normalizedId);
         if (runtime != null) {
             runtime.shutdown();
+            PeerRegistryStore.save(peersById.values());
+
             return true;
         }
+
         return false;
     }
 
@@ -65,4 +74,19 @@ public final class PeerRuntimeManager {
         if (peerID == null) return null;
         return peersById.get(peerID.trim());
     }
+
+    /**
+     * Restore persisted peers from disk.
+     */
+    private void restorePeers() {
+        for (StoredPeer stored : PeerRegistryStore.load()) {
+            try {
+                PeerRuntime runtime = new PeerRuntime(stored.peerName);
+                peersById.put(runtime.getPeerID().toString().trim(), runtime);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
 }
