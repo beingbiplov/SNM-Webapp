@@ -89,4 +89,27 @@ public final class PeerRuntimeManager {
         }
     }
 
+    /**
+     * Start a peer by ID.
+     */
+    public boolean startPeer(String peerId) throws SharkException {
+        PeerRuntime peer = getPeer(peerId);
+        if (peer == null) return false;
+
+        if (!peer.isActive()) {
+            peer.start();
+        }
+        return true;
+    }
+
+    /**
+     * Stop a peer by ID.
+     */
+    public boolean stopPeer(String peerId) throws SharkException {
+        PeerRuntime peer = getPeer(peerId);
+        if (peer == null) return false;
+
+        peer.shutdown();
+        return true;
+    }
 }

@@ -63,6 +63,13 @@ public final class PeerRuntime {
         }
     }
 
+    public void start() throws SharkException {
+        if (!active) {
+            sharkPeer.start(asapPeer);
+            active = true;
+        }
+    }
+
     public boolean isActive() {
         return active;
     }
