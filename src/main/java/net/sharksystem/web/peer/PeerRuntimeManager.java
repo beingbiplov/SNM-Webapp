@@ -22,53 +22,60 @@ public final class PeerRuntimeManager {
         restorePeers();
     }
 
-
     public static PeerRuntimeManager getInstance() {
         return INSTANCE;
     }
 
     /**
      * Create and start a new peer.
+     * Ensures only ONE peer is active at a time.
      */
-    public PeerRuntime createPeer(String peerName)
+    public synchronized PeerRuntime createPeer(String peerName)
             throws SharkException, IOException {
 
+        // Stop any currently active peer
+        stopAllActivePeers();
+
+        // Create & start the new peer
         PeerRuntime runtime = new PeerRuntime(peerName);
         runtime.activate();
-        String peerID = runtime.getPeerID().toString().trim(); // normalize
+
+        String peerID = runtime.getPeerID().toString().trim();
         peersById.put(peerID, runtime);
+
         PeerRegistryStore.save(peersById.values());
 
         return runtime;
     }
 
     /**
-     * Stop and remove a peer by peerID.
+     * Remove a peer completely.
      */
-    public boolean removePeer(String peerID) throws SharkException {
+    public synchronized boolean removePeer(String peerID) {
         if (peerID == null) return false;
 
-        String normalizedId = peerID.trim(); // normalize input
-        PeerRuntime runtime = peersById.remove(normalizedId);
-        if (runtime != null) {
+        PeerRuntime runtime = peersById.remove(peerID.trim());
+        if (runtime == null) return false;
+
+        try {
             runtime.shutdown();
             PeerRegistryStore.save(peersById.values());
-
             return true;
+        } catch (SharkException e) {
+            e.printStackTrace();
+            return false;
         }
-
-        return false;
     }
 
     /**
-     * List all running peers.
+     * List all peers.
      */
     public Collection<PeerRuntime> listPeers() {
         return Collections.unmodifiableCollection(peersById.values());
     }
 
     /**
-     * Get a peer by ID.
+     * Get peer by ID.
      */
     public PeerRuntime getPeer(String peerID) {
         if (peerID == null) return null;
@@ -76,7 +83,60 @@ public final class PeerRuntimeManager {
     }
 
     /**
-     * Restore persisted peers from disk.
+     * Start a peer (exclusive).
+     */
+    public synchronized boolean startPeer(String peerId) {
+        PeerRuntime runtime = getPeer(peerId);
+        if (runtime == null) return false;
+
+        stopAllActivePeers();
+
+        try {
+            if (!runtime.isActive()) {
+                runtime.activate();
+            }
+            PeerRegistryStore.save(peersById.values());
+            return true;
+        } catch (SharkException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Stop a peer.
+     */
+    public synchronized boolean stopPeer(String peerId) {
+        PeerRuntime runtime = getPeer(peerId);
+        if (runtime == null) return false;
+
+        try {
+            runtime.shutdown();
+            PeerRegistryStore.save(peersById.values());
+            return true;
+        } catch (SharkException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Stop all active peers safely.
+     */
+    private void stopAllActivePeers() {
+        for (PeerRuntime runtime : peersById.values()) {
+            if (runtime.isActive()) {
+                try {
+                    runtime.shutdown();
+                } catch (SharkException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    /**
+     * Restore persisted peers.
      */
     private void restorePeers() {
         for (StoredPeer stored : PeerRegistryStore.load()) {
@@ -87,29 +147,5 @@ public final class PeerRuntimeManager {
                 e.printStackTrace();
             }
         }
-    }
-
-    /**
-     * Start a peer by ID.
-     */
-    public boolean startPeer(String peerId) throws SharkException {
-        PeerRuntime peer = getPeer(peerId);
-        if (peer == null) return false;
-
-        if (!peer.isActive()) {
-            peer.start();
-        }
-        return true;
-    }
-
-    /**
-     * Stop a peer by ID.
-     */
-    public boolean stopPeer(String peerId) throws SharkException {
-        PeerRuntime peer = getPeer(peerId);
-        if (peer == null) return false;
-
-        peer.shutdown();
-        return true;
     }
 }
