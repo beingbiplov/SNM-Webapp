@@ -148,4 +148,15 @@ public final class PeerRuntimeManager {
             }
         }
     }
+
+    /**
+     * Get the currently active peer, if any.
+     */
+    public PeerRuntime getActivePeer() {
+        return peersById.values()
+                .stream()
+                .filter(PeerRuntime::isActive)
+                .findFirst()
+                .orElse(null);
+    }
 }
