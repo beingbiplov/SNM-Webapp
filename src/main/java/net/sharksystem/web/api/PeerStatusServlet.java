@@ -26,21 +26,31 @@ public class PeerStatusServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType("application/json");
+
         String path = req.getPathInfo(); // /{peerId}
         if (path == null || path.length() < 2) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("Missing peerId");
+            resp.getWriter().write(error("Missing peerId"));
             return;
         }
 
-        String peerId = path.substring(1); // remove leading '/'
+        String peerId = path.substring(1).trim();
         PeerRuntime peer = manager.getPeer(peerId);
         if (peer == null) {
             resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            resp.getWriter().write("Peer not found");
+            resp.getWriter().write(error("Peer not found"));
             return;
         }
 
+        // Peer exists but is NOT active
+        if (!peer.isActive()) {
+            resp.setStatus(HttpServletResponse.SC_CONFLICT);
+            resp.getWriter().write(error("Peer is not active"));
+            return;
+        }
+
+        // Peer is active → safe to read runtime state
         JsonObject json = new JsonObject();
 
         // Peer information
@@ -71,30 +81,20 @@ public class PeerStatusServlet extends HttpServlet {
 
         // Encounter status
         JsonObject encounterStatus = new JsonObject();
-        Map<CharSequence, List<PeerRuntime.EncounterLog>> encounterLogs = peer.getEncounterLogs();
-        int totalEncounters = encounterLogs.values().stream().mapToInt(List::size).sum();
-        encounterStatus.addProperty("encountersTracked", totalEncounters);
-
-        // Detailed encounter list per peer
-        JsonArray detailedEncounters = new JsonArray();
-        for (Map.Entry<CharSequence, List<PeerRuntime.EncounterLog>> entry : encounterLogs.entrySet()) {
-            CharSequence otherPeerID = entry.getKey();
-            List<PeerRuntime.EncounterLog> logs = entry.getValue();
-
-            for (PeerRuntime.EncounterLog log : logs) {
-                JsonObject logJson = new JsonObject();
-                logJson.addProperty("peerID", otherPeerID.toString());
-                logJson.addProperty("type", log.type != null ? log.type.toString() : "UNKNOWN");
-                logJson.addProperty("startTime", log.startTime);
-                logJson.addProperty("stopTime", log.stopTime);
-                logJson.addProperty("connected", log.stopTime < 0); // still connected if stopTime not set
-                detailedEncounters.add(logJson);
-            }
-        }
-        encounterStatus.add("detailedEncounters", detailedEncounters);
+        Map<CharSequence, List<PeerRuntime.EncounterLog>> logs = peer.getEncounterLogs();
+        encounterStatus.addProperty(
+                "encountersTracked",
+                logs.values().stream().mapToInt(List::size).sum()
+        );
         json.add("encounterStatus", encounterStatus);
 
-        resp.setContentType("application/json");
+        resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write(gson.toJson(json));
+    }
+
+    private String error(String msg) {
+        JsonObject o = new JsonObject();
+        o.addProperty("msg", msg);
+        return gson.toJson(o);
     }
 }
