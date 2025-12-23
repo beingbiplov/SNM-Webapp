@@ -246,4 +246,23 @@ public final class PeerRuntime {
             return "unavailable";
         }
     }
+
+    public synchronized void openTCPConnection(int port) throws IOException {
+        if (!this.isActive()) {
+            throw new IllegalStateException("Peer is not active");
+        }
+
+        if (openSockets.containsKey(port)) {
+            throw new IllegalStateException("Port already in use");
+        }
+
+        TCPServerSocketAcceptor acceptor =
+                new TCPServerSocketAcceptor(
+                        port,
+                        this.encounterManager,
+                        true
+                );
+
+        openSockets.put(port, acceptor);
+    }
 }
