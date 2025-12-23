@@ -9,6 +9,8 @@ import java.io.IOException;
 
 import net.sharksystem.asap.*;
 import net.sharksystem.SharkPeerFS;
+import net.sharksystem.fs.ExtraData;
+import net.sharksystem.fs.ExtraDataFS;
 import net.sharksystem.SharkException;
 import net.sharksystem.pki.SharkPKIComponent;
 import net.sharksystem.asap.utils.PeerIDHelper;
@@ -29,6 +31,8 @@ import net.sharksystem.app.messenger.SharkNetMessengerComponentFactory;
  * encounters, hub management, and status tracking for the servlet.
  */
 public final class PeerRuntime {
+
+    private static final String PEER_ID_KEY = "peerID";
 
     private final String peerName;
     private final CharSequence peerID;
@@ -74,14 +78,29 @@ public final class PeerRuntime {
         this(peerName, 10); // default sync interval
     }
 
-    public PeerRuntime(String peerName, int syncWithOthersInSeconds) throws SharkException, IOException {
-        this.peerName = peerName;
+    public PeerRuntime(String peerName, int syncWithOthersInSeconds)
+            throws SharkException, IOException {
 
-        // Generate unique peer ID
-        this.peerID = peerName + "_" + PeerIDHelper.createUniqueID();
+        this.peerName = peerName;
 
         String dataDir = "./data/" + peerName;
         new File(dataDir).mkdirs();
+
+        ExtraData peerData = new ExtraDataFS(dataDir + "/.peerRuntime");
+
+        CharSequence loadedPeerID = null;
+        try {
+            loadedPeerID = new String(peerData.getExtra(PEER_ID_KEY));
+        } catch (SharkException ignored) {
+            // first run
+        }
+
+        if (loadedPeerID == null) {
+            loadedPeerID = peerName + "_" + PeerIDHelper.createUniqueID();
+            peerData.putExtra(PEER_ID_KEY, loadedPeerID.toString().getBytes());
+        }
+
+        this.peerID = loadedPeerID;
 
         this.sharkPeer = new SharkPeerFS(peerName, dataDir);
         this.asapPeer = new ASAPPeerFS(peerID, dataDir, sharkPeer.getSupportedFormats());
@@ -89,21 +108,23 @@ public final class PeerRuntime {
         ASAPKeyStore keyStore = new InMemoASAPKeyStore(peerID);
         asapPeer.setASAPKeyStore(keyStore);
 
-        // Initialize PKI component
+        // PKI
         SharkPKIComponentFactory pkiFactory = new SharkPKIComponentFactory();
         this.sharkPeer.addComponent(pkiFactory, SharkPKIComponent.class);
         this.pkiComponent = (SharkPKIComponent) sharkPeer.getComponent(SharkPKIComponent.class);
 
-        // Initialize Messenger component
+        // Messenger
         SharkNetMessengerComponentFactory messengerFactory =
                 new SharkNetMessengerComponentFactory(this.pkiComponent);
         this.sharkPeer.addComponent(messengerFactory, SharkNetMessengerComponent.class);
-        this.messengerComponent = (SharkNetMessengerComponent) sharkPeer.getComponent(SharkNetMessengerComponent.class);
+        this.messengerComponent =
+                (SharkNetMessengerComponent) sharkPeer.getComponent(SharkNetMessengerComponent.class);
 
-        // Setup encounter manager
+        // Encounter manager
         ASAPConnectionHandler handler = (ASAPConnectionHandler) asapPeer;
-        ASAPEncounterManagerImpl encounterMgr = new ASAPEncounterManagerImpl(handler, peerID,
-                syncWithOthersInSeconds * 100L);
+        ASAPEncounterManagerImpl encounterMgr =
+                new ASAPEncounterManagerImpl(handler, peerID, syncWithOthersInSeconds * 100L);
+
         this.encounterManager = encounterMgr;
         this.encounterManagerAdmin = encounterMgr;
 
