@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.io.IOException;
+import java.net.Socket;
 
 import net.sharksystem.asap.*;
 import net.sharksystem.SharkPeerFS;
@@ -18,6 +19,7 @@ import net.sharksystem.asap.crypto.ASAPKeyStore;
 import net.sharksystem.hub.HubConnectionManager;
 import net.sharksystem.hub.HubConnectionManagerImpl;
 import net.sharksystem.pki.SharkPKIComponentFactory;
+import net.sharksystem.utils.streams.StreamPairImpl;
 import net.sharksystem.web.peer.PeerRuntime.EncounterLog;
 import net.sharksystem.asap.crypto.InMemoASAPKeyStore;
 import net.sharksystem.asap.crypto.ASAPCryptoAlgorithms;
@@ -304,5 +306,37 @@ public final class PeerRuntime {
             }
         }
         openSockets.clear();
+    }
+
+    /**
+     * Connect to a TCP host and port.
+     * @param host
+     * @param port
+     * @throws IOException
+     * @throws IllegalStateException if the peer is not active or same-process connection attempted
+     */
+    public synchronized void connectTCP(String host, int port) throws IOException {
+        if (!this.isActive()) {
+            throw new IllegalStateException("Peer is not active");
+        }
+
+        // Same-process safety check (copied from CLI logic)
+        if (host.equalsIgnoreCase("127.0.0.1") || host.equalsIgnoreCase("localhost")) {
+            if (openSockets.containsKey(port)) {
+                throw new IllegalStateException(
+                        "Attempt to establish a connection to same peer refused"
+                );
+            }
+        }
+
+        Socket socket = new Socket(host, port);
+
+        encounterManager.handleEncounter(
+                StreamPairImpl.getStreamPair(
+                        socket.getInputStream(),
+                        socket.getOutputStream()
+                ),
+                ASAPEncounterConnectionType.INTERNET
+        );
     }
 }
