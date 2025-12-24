@@ -143,6 +143,7 @@ public final class PeerRuntime {
     /** Stop the peer */
     public void shutdown() throws SharkException {
         if (active) {
+            closeAllTCPConnections();
             sharkPeer.stop();
             active = false;
         }
@@ -247,6 +248,12 @@ public final class PeerRuntime {
         }
     }
 
+    /**
+     * Open a TCP connection on the specified port.
+     * @param port
+     * @throws IOException
+     * @throws IllegalStateException if the peer is not active or port is already in use
+     */
     public synchronized void openTCPConnection(int port) throws IOException {
         if (!this.isActive()) {
             throw new IllegalStateException("Peer is not active");
@@ -264,5 +271,38 @@ public final class PeerRuntime {
                 );
 
         openSockets.put(port, acceptor);
+    }
+
+    /**
+     * Close the TCP connection on the specified port.
+     * @param port
+     * @throws IOException
+     * @throws IllegalStateException if the peer is not active or port is not open
+     */
+    public synchronized void closeTCPConnection(int port) throws IOException {
+        if (!this.isActive()) {
+            throw new IllegalStateException("Peer is not active");
+        }
+
+        TCPServerSocketAcceptor acceptor = openSockets.remove(port);
+        if (acceptor == null) {
+            throw new IllegalStateException("Port is not open");
+        }
+
+        acceptor.close();
+    }
+
+    /**
+     * Close all open TCP connections.
+     */
+    private void closeAllTCPConnections() {
+        for (TCPServerSocketAcceptor acceptor : openSockets.values()) {
+            try {
+                acceptor.close();
+            } catch (IOException ignored) {
+                // ignore
+            }
+        }
+        openSockets.clear();
     }
 }
