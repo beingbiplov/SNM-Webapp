@@ -20,6 +20,12 @@ public final class PeerRuntimeManager {
 
     private PeerRuntimeManager() {
         restorePeers();
+
+        // Shutdown hook to stop all peers gracefully.
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("[Shutdown] Stopping all peers...");
+            stopAllActivePeers();
+        }));
     }
 
     public static PeerRuntimeManager getInstance() {
