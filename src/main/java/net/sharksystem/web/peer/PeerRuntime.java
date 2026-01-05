@@ -15,13 +15,11 @@ import net.sharksystem.fs.ExtraData;
 import net.sharksystem.pki.PKIHelper;
 import net.sharksystem.fs.ExtraDataFS;
 import net.sharksystem.SharkException;
-import net.sharksystem.asap.ASAPException;
 import net.sharksystem.pki.CredentialMessage;
 import net.sharksystem.pki.SharkPKIComponent;
 import net.sharksystem.asap.utils.PeerIDHelper;
 import net.sharksystem.asap.crypto.ASAPKeyStore;
 import net.sharksystem.hub.HubConnectionManager;
-import net.sharksystem.asap.ASAPSecurityException;
 import net.sharksystem.hub.HubConnectionManagerImpl;
 import net.sharksystem.pki.SharkPKIComponentFactory;
 import net.sharksystem.utils.streams.StreamPairImpl;
@@ -361,17 +359,20 @@ public final class PeerRuntime {
         return pendingCredentialMessages;
     }
 
-    /** Accept and process a pending credential message by its index  */
-    public CredentialMessage acceptPendingCredentialMessageOnIndex(int index)
-            throws ASAPSecurityException, IOException {
+    /** method to accept or refuse a pending credential message by its index */
+    private CredentialMessage actionOnPendingCredentialMessageOnIndex(
+            int index,
+            boolean accept
+    ) throws ASAPSecurityException, IOException {
 
         if (index < 1) {
             throw new IllegalArgumentException("minimal index is 1");
         }
 
-        if (pendingCredentialMessages.size() < index) {
+        if (this.pendingCredentialMessages.size() < index) {
             throw new IllegalArgumentException(
-                    "index " + index + " exceeds maximum of " + pendingCredentialMessages.size()
+                    "index " + index + " exceeds maximum of "
+                            + this.pendingCredentialMessages.size()
             );
         }
 
@@ -379,17 +380,33 @@ public final class PeerRuntime {
         index--;
 
         CredentialMessage actioned =
-                pendingCredentialMessages.remove(index);
+                this.pendingCredentialMessages.remove(index);
 
-        try {
-            pkiComponent.getPersonValuesByName(actioned.getSubjectName());
-            actioned.setSubjectName(actioned.getSubjectID());
-        } catch (ASAPException ignored) {
-            // peer name not known yet → OK
+        if (accept) {
+            try {
+                pkiComponent.getPersonValuesByName(actioned.getSubjectName());
+                actioned.setSubjectName(actioned.getSubjectID());
+            } catch (ASAPException ignored) {
+                // peer name not known yet → OK
+            }
+
+            pkiComponent.acceptAndSignCredential(actioned);
         }
 
-        pkiComponent.acceptAndSignCredential(actioned);
-
         return actioned;
-    }     
+    }
+
+    /** Accept and process a pending credential message by its index */
+    public CredentialMessage acceptPendingCredentialMessageOnIndex(int index)
+            throws ASAPSecurityException, IOException {
+
+        return this.actionOnPendingCredentialMessageOnIndex(index, true);
+    }
+
+    /** Refuse a pending credential message by its index */
+    public CredentialMessage refusePendingCredentialMessageOnIndex(int index)
+            throws ASAPSecurityException, IOException {
+
+        return this.actionOnPendingCredentialMessageOnIndex(index, false);
+    }
 }
