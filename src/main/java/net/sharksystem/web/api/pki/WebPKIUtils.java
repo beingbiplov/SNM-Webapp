@@ -1,13 +1,13 @@
 package net.sharksystem.web.api.pki;
 
+import net.sharksystem.pki.SharkPKIComponent;
+import net.sharksystem.asap.pki.ASAPCertificate;
 import net.sharksystem.asap.ASAPEncounterConnectionType;
 import net.sharksystem.asap.crypto.ASAPCryptoAlgorithms;
-import net.sharksystem.asap.pki.ASAPCertificate;
-import net.sharksystem.pki.SharkPKIComponent;
 
-import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.HashMap;
+import java.security.NoSuchAlgorithmException;
 
 public class WebPKIUtils {
 
@@ -58,5 +58,19 @@ public class WebPKIUtils {
         }
 
         return json;
+    }
+
+    /**
+     * Provide explanation text for identity assurance levels.
+     */
+    public static String getIAExplainText(int ia) {
+        if(ia < 0 || ia > 10) return "error: iA must be in [0,10]";
+        if(ia == 0) return("bad");
+        else if(ia == 10) return("perfect");
+        else if(ia == 9) return("good");
+        else if(ia > 6) return("nice");
+        else if(ia < 4) return("bad");
+
+        return("enough?");
     }
 }
