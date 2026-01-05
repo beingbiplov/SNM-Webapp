@@ -3,16 +3,18 @@ package net.sharksystem.web.peer;
 import java.io.File;
 import java.util.Map;
 import java.util.List;
+import java.net.Socket;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.io.IOException;
-import java.net.Socket;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import net.sharksystem.asap.*;
 import net.sharksystem.SharkPeerFS;
 import net.sharksystem.fs.ExtraData;
 import net.sharksystem.fs.ExtraDataFS;
 import net.sharksystem.SharkException;
+import net.sharksystem.pki.CredentialMessage;
 import net.sharksystem.pki.SharkPKIComponent;
 import net.sharksystem.asap.utils.PeerIDHelper;
 import net.sharksystem.asap.crypto.ASAPKeyStore;
@@ -20,13 +22,15 @@ import net.sharksystem.hub.HubConnectionManager;
 import net.sharksystem.hub.HubConnectionManagerImpl;
 import net.sharksystem.pki.SharkPKIComponentFactory;
 import net.sharksystem.utils.streams.StreamPairImpl;
-import net.sharksystem.web.peer.PeerRuntime.EncounterLog;
 import net.sharksystem.asap.crypto.InMemoASAPKeyStore;
 import net.sharksystem.asap.crypto.ASAPCryptoAlgorithms;
+import net.sharksystem.web.peer.PeerRuntime.EncounterLog;
 import net.sharksystem.asap.apps.TCPServerSocketAcceptor;
 import net.sharksystem.hub.peerside.HubConnectorDescription;
 import net.sharksystem.app.messenger.SharkNetMessengerComponent;
 import net.sharksystem.app.messenger.SharkNetMessengerComponentFactory;
+
+import net.sharksystem.web.pki.CredentialReceivedListener;
 
 /**
  * Represents one SharkNet peer in the web application, extended with messenger, PKI,
@@ -75,6 +79,7 @@ public final class PeerRuntime {
     // App settings
     private boolean rememberNewHubConnections = true;
     private boolean hubReconnect = true;
+    private CredentialReceivedListener credentialListener;
 
     public PeerRuntime(String peerName) throws SharkException, IOException {
         this(peerName, 10); // default sync interval
@@ -139,6 +144,10 @@ public final class PeerRuntime {
         if (!active) {
             sharkPeer.start(asapPeer);
             active = true;
+
+            //Add CredentialReceivedListener for this peer
+            this.credentialListener = new CredentialReceivedListener(this);
+            this.pkiComponent.setSharkCredentialReceivedListener(credentialListener);
         }
     }
 
@@ -339,4 +348,16 @@ public final class PeerRuntime {
                 ASAPEncounterConnectionType.INTERNET
         );
     }
+
+    private final List<CredentialMessage> pendingCredentialMessages = new CopyOnWriteArrayList<>();
+
+    public void addPendingCredentialMessage(CredentialMessage msg) {
+        pendingCredentialMessages.add(msg);
+    }
+
+    public List<CredentialMessage> getPendingCredentialMessages() {
+        return pendingCredentialMessages;
+    }
+
+
 }
