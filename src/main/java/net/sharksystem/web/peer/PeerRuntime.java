@@ -12,13 +12,16 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import net.sharksystem.asap.*;
 import net.sharksystem.SharkPeerFS;
 import net.sharksystem.fs.ExtraData;
+import net.sharksystem.pki.PKIHelper;
 import net.sharksystem.fs.ExtraDataFS;
 import net.sharksystem.SharkException;
+import net.sharksystem.asap.ASAPException;
 import net.sharksystem.pki.CredentialMessage;
 import net.sharksystem.pki.SharkPKIComponent;
 import net.sharksystem.asap.utils.PeerIDHelper;
 import net.sharksystem.asap.crypto.ASAPKeyStore;
 import net.sharksystem.hub.HubConnectionManager;
+import net.sharksystem.asap.ASAPSecurityException;
 import net.sharksystem.hub.HubConnectionManagerImpl;
 import net.sharksystem.pki.SharkPKIComponentFactory;
 import net.sharksystem.utils.streams.StreamPairImpl;
@@ -26,11 +29,10 @@ import net.sharksystem.asap.crypto.InMemoASAPKeyStore;
 import net.sharksystem.asap.crypto.ASAPCryptoAlgorithms;
 import net.sharksystem.web.peer.PeerRuntime.EncounterLog;
 import net.sharksystem.asap.apps.TCPServerSocketAcceptor;
+import net.sharksystem.web.pki.CredentialReceivedListener;
 import net.sharksystem.hub.peerside.HubConnectorDescription;
 import net.sharksystem.app.messenger.SharkNetMessengerComponent;
 import net.sharksystem.app.messenger.SharkNetMessengerComponentFactory;
-
-import net.sharksystem.web.pki.CredentialReceivedListener;
 
 /**
  * Represents one SharkNet peer in the web application, extended with messenger, PKI,
@@ -359,5 +361,35 @@ public final class PeerRuntime {
         return pendingCredentialMessages;
     }
 
+    /** Accept and process a pending credential message by its index  */
+    public CredentialMessage acceptPendingCredentialMessageOnIndex(int index)
+            throws ASAPSecurityException, IOException {
 
+        if (index < 1) {
+            throw new IllegalArgumentException("minimal index is 1");
+        }
+
+        if (pendingCredentialMessages.size() < index) {
+            throw new IllegalArgumentException(
+                    "index " + index + " exceeds maximum of " + pendingCredentialMessages.size()
+            );
+        }
+
+        // convert to 0-based index
+        index--;
+
+        CredentialMessage actioned =
+                pendingCredentialMessages.remove(index);
+
+        try {
+            pkiComponent.getPersonValuesByName(actioned.getSubjectName());
+            actioned.setSubjectName(actioned.getSubjectID());
+        } catch (ASAPException ignored) {
+            // peer name not known yet → OK
+        }
+
+        pkiComponent.acceptAndSignCredential(actioned);
+
+        return actioned;
+    }     
 }
