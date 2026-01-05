@@ -1,4 +1,4 @@
-package net.sharksystem.web.api;
+package net.sharksystem.web.api.peer;
 
 import net.sharksystem.web.peer.PeerRuntime;
 import net.sharksystem.web.peer.PeerRuntimeManager;
