@@ -3,6 +3,7 @@ package net.sharksystem.web.api.messenger;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import net.sharksystem.SharkException;
 import jakarta.servlet.http.HttpServlet;
 import net.sharksystem.web.peer.PeerRuntime;
 import jakarta.servlet.annotation.WebServlet;
@@ -11,21 +12,27 @@ import jakarta.servlet.http.HttpServletResponse;
 import net.sharksystem.web.peer.PeerRuntimeManager;
 import net.sharksystem.app.messenger.SharkNetMessengerChannel;
 import net.sharksystem.app.messenger.SharkNetMessengerComponent;
+import net.sharksystem.app.messenger.SharkNetMessengerException;
 
 import java.util.List;
+import java.io.Reader;
 import java.time.Instant;
 import java.io.IOException;
 
 /**
- * API to list all messenger channels known to the active peer.
- *
+ * API to list and create messenger channels.
  * GET /api/messenger/channels
+ * POST /api/messenger/channels
  */
 @WebServlet("/api/messenger/channels")
 public class ListChannelsServlet extends HttpServlet {
 
     private final PeerRuntimeManager manager = PeerRuntimeManager.getInstance();
     private final Gson gson = new Gson();
+    private static class CreateChannelRequest {
+        String uri;
+        String name;
+    }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -91,6 +98,83 @@ public class ListChannelsServlet extends HttpServlet {
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             root.addProperty("error", e.getMessage());
             write(resp, root);
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+
+        JsonObject result = new JsonObject();
+
+        PeerRuntime peer = manager.getActivePeer();
+        if (peer == null) {
+            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            result.addProperty("error", "No active peer");
+            write(resp, result);
+            return;
+        }
+
+        SharkNetMessengerComponent messenger =
+                peer.getMessengerComponent();
+        if (messenger == null) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            result.addProperty("error", "Messenger component not available");
+            write(resp, result);
+            return;
+        }
+
+        CreateChannelRequest body;
+        try (Reader reader = req.getReader()) {
+            body = gson.fromJson(reader, CreateChannelRequest.class);
+        }
+
+        if (body == null || body.uri == null || body.uri.isBlank()) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            result.addProperty("error", "channel uri is required");
+            write(resp, result);
+            return;
+        }
+
+        String uri = body.uri;
+        String name = body.name;
+
+        try {
+            messenger.getChannel(uri);
+
+            // Channel exists → noop
+            resp.setStatus(HttpServletResponse.SC_OK);
+            result.addProperty("status", "noop");
+            result.addProperty(
+                    "message",
+                    "nothing to do; channel already exists: " + uri
+            );
+            result.addProperty("uri", uri);
+            write(resp, result);
+
+        } catch (SharkException notExisting) {
+            // Channel does not exist → create
+            try {
+                messenger.createChannel(uri, name, true);
+
+                JsonObject channel = new JsonObject();
+                channel.addProperty(
+                        "name",
+                        name != null ? name : "<no name set>"
+                );
+                channel.addProperty("uri", uri);
+
+                resp.setStatus(HttpServletResponse.SC_CREATED);
+                result.addProperty("status", "created");
+                result.addProperty("message", "channel created");
+                result.add("channel", channel);
+                write(resp, result);
+
+            } catch (SharkNetMessengerException e) {
+                resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                result.addProperty("error", e.getLocalizedMessage());
+                write(resp, result);
+            }
         }
     }
 
