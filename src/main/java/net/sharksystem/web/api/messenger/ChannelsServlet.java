@@ -25,7 +25,7 @@ import java.io.IOException;
  * POST /api/messenger/channels
  */
 @WebServlet("/api/messenger/channels")
-public class ListChannelsServlet extends HttpServlet {
+public class ChannelsServlet extends HttpServlet {
 
     private final PeerRuntimeManager manager = PeerRuntimeManager.getInstance();
     private final Gson gson = new Gson();
