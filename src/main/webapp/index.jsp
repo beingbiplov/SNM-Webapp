@@ -1,114 +1,143 @@
-<!DOCTYPE html>
-<html lang="en">
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <!DOCTYPE html>
+  <html lang="en">
+
   <head>
-    <meta charset="UTF-8" />
-    <title>SharkNet – Peers</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 40px;
-      }
-
-      h1 {
-        margin-bottom: 10px;
-      }
-
-      button {
-        padding: 6px 12px;
-        margin-bottom: 20px;
-        cursor: pointer;
-      }
-
-      table {
-        border-collapse: collapse;
-        width: 100%;
-        max-width: 800px;
-      }
-
-      th,
-      td {
-        border: 1px solid #ddd;
-        padding: 10px;
-      }
-
-      th {
-        background-color: #f5f5f5;
-        text-align: left;
-      }
-
-      .active {
-        color: green;
-        font-weight: bold;
-      }
-
-      .inactive {
-        color: red;
-        font-weight: bold;
-      }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SharkNet Messenger</title>
+    <link rel="stylesheet" href="css/style.css?v=4">
   </head>
+
   <body>
-    <h1>SharkNet Peers</h1>
-    <p>List of peers known to the system.</p>
+    <jsp:include page="header.jsp" />
 
-    <button onclick="loadPeers()">Refresh</button>
+    <div class="main-container">
+      <% request.setAttribute("activePage", "messenger" ); %>
+        <jsp:include page="sidebar.jsp" />
 
-    <table>
-      <thead>
-        <tr>
-          <th>Peer Name</th>
-          <th>Peer ID</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody id="peerTableBody">
-        <!-- rows added dynamically -->
-      </tbody>
-    </table>
+        <div class="content-wrapper">
+          <div class="page-container">
+            <!-- Main Header (Welcome Message) -->
+            <div style="margin-bottom: 32px">
+              <h1
+                style="font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; font-weight: 700; margin-bottom: 8px;">
+                Welcome to SharkNetMessenger</h1>
+              <p style="color: var(--text-muted);">Your decentralized research communication platform.</p>
+            </div>
 
-    <script>
-      async function loadPeers() {
-        const tableBody = document.getElementById("peerTableBody");
-        tableBody.innerHTML = "<tr><td colspan='3'>Loading...</td></tr>";
+            
+            <!-- <div class="messenger-grid">
+        
+              <div class="col-channels">
+                <div style="font-weight: 700; margin-bottom: 20px; font-family: 'JetBrains Mono', monospace;">Channels /
+                  Contacts</div>
+                <div class="channel-item active">
+                  <div class="status-dot dot-green"></div> #research-devs
+                </div>
+                <div class="channel-item">
+                  <div class="status-dot dot-green"></div> #protocol-design
+                </div>
+                <div class="channel-item">
+                  <div class="status-dot dot-yellow"></div> Dr. Ada Lovelace
+                </div>
+                <div class="channel-item">
+                  <div class="status-dot dot-green"></div> Alan Turing
+                </div>
+                <div class="channel-item">
+                  <div class="status-dot dot-yellow"></div> Grace Hopper
+                </div>
+                <div class="channel-item">
+                  <div class="status-dot dot-yellow"></div> Vannevar Bush
+                </div>
+                <div class="channel-item">
+                  <div class="status-dot dot-green"></div> Claude Shannon
+                </div>
+              </div>
 
-        try {
-          const response = await fetch("/snm-webapp/api/peer");
-          const peers = await response.json();
+            
+              <div class="col-chat">
+                <div style="font-weight: 700; margin-bottom: 20px; font-family: 'JetBrains Mono', monospace;">Message
+                  View</div>
 
-          tableBody.innerHTML = "";
+                <div class="chat-log">
+                  <p>
+                    <span class="chat-time">14:30:15 -</span>
+                    <span class="chat-sender">You:</span><br>
+                    Initiating data exchange protocol. All peers ready?
+                  </p>
+                  <p>
+                    <span class="chat-time">14:30:22 -</span>
+                    <span class="chat-sender">Dr. Ada Lovelace:</span><br>
+                    Confirmed. Awaiting your signal to begin the transmission.
+                  </p>
+                  <p>
+                    <span class="chat-time">14:30:30 -</span>
+                    <span class="chat-sender">Grace Hopper:</span><br>
+                    Ready on my end. Bandwidth utilization looks optimal.
+                  </p>
+                  <p>
+                    <span class="chat-time">14:30:45 -</span>
+                    <span class="chat-sender">You:</span><br>
+                    Excellent. Sending batch #1. Monitor for any anomalies.
+                  </p>
+                  <p>
+                    <span class="chat-time">14:31:01 -</span>
+                    <span class="chat-sender">Dr. Ada Lovelace:</span><br>
+                    Receiving batch #1. CRC checks passed. Initial analysis shows expected data integrity.
+                  </p>
+                  <p>
+                    <span class="chat-time">14:31:05 -</span>
+                    <span class="chat-sender">Grace Hopper:</span><br>
+                    Acknowledged. Data stream stable.
+                  </p>
+                </div>
 
-          if (!peers || peers.length === 0) {
-            tableBody.innerHTML = "<tr><td colspan='3'>No peers found</td></tr>";
-            return;
-          }
+                <div class="chat-input-wrapper">
+                  <textarea placeholder="Type your message here..."></textarea>
+                  <button class="btn-primary" style="width: 100%;">Send Message</button>
+                </div>
+              </div>
 
-          peers.forEach((peer) => {
-            const row = document.createElement("tr");
+          
+              <div class="col-info">
+                <div style="font-weight: 700; margin-bottom: 20px; font-family: 'JetBrains Mono', monospace;">Technical
+                  Info</div>
 
-            const nameCell = document.createElement("td");
-            nameCell.textContent = peer.name;
+                <span class="tech-label">Selected Peer ID:</span>
+                <span class="tech-value">0x1A2B3C4D5E6F7A8B</span>
 
-            const idCell = document.createElement("td");
-            idCell.textContent = peer.peerId;
+                <span class="tech-label">Routing Path:</span>
+                <span class="tech-value">Local -> Peer A -> Peer B</span>
 
-            const statusCell = document.createElement("td");
-            statusCell.textContent = peer.active ? "ACTIVE" : "INACTIVE";
-            statusCell.className = peer.active ? "active" : "inactive";
+                <span class="tech-label">Encryption Status:</span>
+                <span class="tech-value">AES-256 (E2EE) - Active</span>
 
-            row.appendChild(nameCell);
-            row.appendChild(idCell);
-            row.appendChild(statusCell);
+                <span class="tech-label">Protocol Version:</span>
+                <span class="tech-value">ASAP/1.0.3-beta</span>
 
-            tableBody.appendChild(row);
-          });
-        } catch (err) {
-          tableBody.innerHTML = "<tr><td colspan='3'>Failed to load peers</td></tr>";
-          console.error(err);
-        }
-      }
+                <span class="tech-label">Message Size (avg):</span>
+                <span class="tech-value">1024 bytes</span>
 
-      // Load peers on page load
-      loadPeers();
-    </script>
+                <span class="tech-label">Latency (last ping):</span>
+                <span class="tech-value">25 ms</span>
+
+                <span class="tech-label">Certificate Validity:</span>
+                <span class="tech-value">2023-01-01 to 2024-01-01</span>
+
+                <span class="tech-label">Session Start Time:</span>
+                <span class="tech-value">14:28:00 UTC</span>
+
+                <span class="tech-label">Active Channels:</span>
+                <span class="tech-value">3</span>
+
+                <span class="tech-label">Ephemeral Key Status:</span>
+                <span class="tech-value">Refreshed</span>
+              </div>
+            </div> -->
+          </div>
+        </div>
+    </div>
   </body>
-</html>
+
+  </html>

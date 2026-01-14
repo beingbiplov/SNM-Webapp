@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-TOMCAT_HOME="/opt/tomcat"
+TOMCAT_HOME="/opt/homebrew/opt/tomcat/libexec"
 WAR="snm-webapp.war"
 
 echo "Starting SharkNet Web App..."

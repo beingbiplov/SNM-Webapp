@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-TOMCAT_HOME="/opt/tomcat"
+TOMCAT_HOME="/opt/homebrew/opt/tomcat/libexec"
 
 echo "Stopping SharkNet Web App (Tomcat)..."
 

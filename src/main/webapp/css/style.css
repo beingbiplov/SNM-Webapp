@@ -1,0 +1,562 @@
+/* Global Styles */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Colors */
+  --primary-color: #2563eb;
+  /* Darker, more professional blue */
+  --primary-hover: #1d4ed8;
+  --bg-body: #f3f4f6;
+  /* Light Gray Background for the whole app (modern dashboard look) */
+  --bg-card: #ffffff;
+  --text-main: #111827;
+  --text-muted: #6b7280;
+  --border-color: #e5e7eb;
+
+  /* Status Colors */
+  --green: #10b981;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  /* CHANGED: Default is now clean Sans-Serif */
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.5;
+}
+
+/* --- header --- */
+header {
+  height: 64px;
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--text-main);
+}
+
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 8px;
+  display: FLEX;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-family: var(--font-mono);
+}
+
+.header-status {
+  display: flex;
+  gap: 24px;
+  font-size: 0.875rem;
+}
+
+.header-status .status-item {
+  color: var(--text-muted);
+}
+
+.header-status span {
+  color: var(--text-main);
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+/* --- Layout --- */
+.main-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  /* Prevents double scrolling */
+}
+
+/* --- Sidebar --- */
+.sidebar {
+  width: 260px;
+  background-color: var(--bg-card);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+  background-color: #f3f4f6;
+  color: var(--text-main);
+}
+
+.nav-item.active {
+  background-color: #eff6ff;
+  /* Light blue tint */
+  color: var(--primary-color);
+}
+
+.footer-info {
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* --- Content Area --- */
+.content-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.page-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 48px;
+  /* Generous padding */
+  max-width: 1400px;
+  /* Prevent stretching too wide on huge screens */
+  margin: 0 auto;
+  width: 100%;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.page-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 8px;
+}
+
+.page-subtitle {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+/* --- Components --- */
+
+/* Cards/Containers */
+.card,
+.settings-section,
+.cert-block,
+.contacts-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  /* Subtle shadow for depth */
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.contacts-panel,
+.info-panel {
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  margin-bottom: 0;
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+.btn-secondary {
+  background-color: white;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.btn-secondary:hover {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.btn-danger {
+  background-color: var(--red);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Inputs */
+input[type="text"],
+input[type="number"],
+input[type="password"],
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  /* Keep data monospace */
+  font-size: 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Tables */
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.data-table th {
+  background: #f9fafb;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.data-table td {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.badge-blue {
+  background-color: #eff6ff;
+  color: var(--primary-color);
+}
+
+.badge-indigo {
+  background-color: #e0e7ff;
+  color: #4338ca;
+}
+
+.badge-gray {
+  background-color: #f3f4f6;
+  color: var(--text-muted);
+}
+
+.badge-green {
+  background-color: #ecfdf5;
+  color: #047857;
+}
+
+.badge-red {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+/* Contacts Specific */
+.search-bar {
+  margin-bottom: 24px;
+}
+
+/* Dashboard Grids */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  /* Responsive Grid */
+  gap: 24px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+/* Settings Form Specifics */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.form-hint {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-top: 6px;
+}
+
+/* Messenger Layout Specific Overrides */
+.messenger-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr 340px;
+  /* Resize Cols */
+  height: 100%;
+  background: white;
+  /* Messenger has white BG */
+}
+
+.contacts-panel {
+  border-right: 1px solid var(--border-color);
+  padding: 24px;
+}
+
+.info-panel {
+  border-left: 1px solid var(--border-color);
+  padding: 24px;
+  background: #f9fafb;
+}
+
+.chat-panel {
+  background: white;
+  padding: 24px 40px;
+  /* More padding in chat */
+}
+
+/* Chat Bubbles / Logs */
+.log-container {
+  background-color: #fafafa;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.message-line {
+  margin-bottom: 4px;
+}
+
+.sender {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+
+/* --- Messenger Main Page Specifics --- */
+.messenger-grid {
+  display: grid;
+  grid-template-columns: 240px 1fr 340px;
+  /* Specific widths from design */
+  gap: 0;
+  /* Gaps handled by padding/borders */
+  border: 1px solid var(--border-color);
+  /* The specific container border */
+  border-radius: 8px;
+  overflow: hidden;
+  /* For proper corners */
+  min-height: 600px;
+}
+
+.col-channels {
+  background-color: #f9fafb;
+  /* Light gray sidebar for channels */
+  border-right: 1px solid var(--border-color);
+  padding: 24px;
+}
+
+.col-chat {
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 32px;
+}
+
+.col-info {
+  background-color: #f3f4f6;
+  /* Technical info gray background */
+  border-left: 1px solid var(--border-color);
+  padding: 24px;
+  font-size: 0.85rem;
+}
+
+/* Chat Specifics */
+.chat-log {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  margin-bottom: 24px;
+  color: #374151;
+}
+
+.chat-log p {
+  margin-bottom: 12px;
+}
+
+.chat-time {
+  color: var(--text-muted);
+  margin-right: 8px;
+}
+
+.chat-sender {
+  font-weight: 600;
+  color: var(--text-main);
+  margin-right: 8px;
+}
+
+.chat-input-wrapper textarea {
+  width: 100%;
+  height: 80px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  resize: none;
+  font-family: var(--font-sans);
+}
+
+.channel-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.channel-item.active {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dot-green {
+  background-color: var(--green);
+}
+
+.dot-yellow {
+  background-color: var(--yellow);
+}
+
+.dot-gray {
+  background-color: #d1d5db;
+}
+
+/* Technical Info Styles */
+.tech-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--text-main);
+  margin-top: 16px;
+}
+
+.tech-label:first-child {
+  margin-top: 0;
+}
+
+.tech-value {
+  display: block;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
+/* Utility Styles */
+.info-section-divider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 24px 0;
+}
