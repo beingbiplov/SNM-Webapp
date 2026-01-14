@@ -1,4 +1,4 @@
-package net.sharksystem.web.api;
+package net.sharksystem.web.api.tcp;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;

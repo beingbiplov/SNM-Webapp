@@ -1,24 +1,26 @@
-package net.sharksystem.web.api;
+package net.sharksystem.web.api.tcp;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+
 import jakarta.servlet.http.HttpServlet;
-import net.sharksystem.web.peer.PeerRuntime;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import net.sharksystem.web.peer.PeerRuntimeManager;
 
 import java.io.IOException;
 
+import net.sharksystem.web.peer.PeerRuntime;
+import net.sharksystem.web.peer.PeerRuntimeManager;
+
 /**
- * API to open a TCP port on the peer.
+ * API to connect to a TCP port on a remote peer.
  *
- * POST /api/tcp/open
- * Body: { "peerId": "peer-id-string", "port": 12345 }
+ * POST /api/tcp/connect
+ * Body: { "peerId": "peerId_xxx", "host": "localhost", "port": 12345 }
  */
-@WebServlet("/api/tcp/open")
-public class OpenTCPServlet extends HttpServlet {
+@WebServlet("/api/tcp/connect")
+public class ConnectTCPServlet extends HttpServlet {
 
     private final PeerRuntimeManager manager = PeerRuntimeManager.getInstance();
     private final Gson gson = new Gson();
@@ -26,43 +28,54 @@ public class OpenTCPServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         JsonObject response = new JsonObject();
-        JsonObject body = gson.fromJson(req.getReader(), JsonObject.class);
 
-        // Validate body
-        if (body == null || !body.has("peerId") || !body.has("port")) {
+        JsonObject body = gson.fromJson(req.getReader(), JsonObject.class);
+        if (body == null
+                || !body.has("peerId")
+                || !body.has("host")
+                || !body.has("port")) {
+
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            response.addProperty("msg", "Missing peerId or port in request body");
-            resp.setContentType("application/json");
-            resp.getWriter().write(gson.toJson(response));
+            response.addProperty("msg", "Missing peerId, host or port");
+            write(resp, response);
             return;
         }
 
-        String peerId = body.get("peerId").getAsString();
         int port = body.get("port").getAsInt();
+        String host = body.get("host").getAsString();
+        String peerId = body.get("peerId").getAsString();
 
         PeerRuntime peer = manager.getPeer(peerId);
+
         if (peer == null || !peer.isActive()) {
             resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
             response.addProperty("msg", "Peer not found or not active");
-            resp.setContentType("application/json");
-            resp.getWriter().write(gson.toJson(response));
+            write(resp, response);
             return;
         }
 
         try {
-            peer.openTCPConnection(port);
+            peer.connectTCP(host, port);
+
             resp.setStatus(HttpServletResponse.SC_OK);
-            response.addProperty("msg", "TCP port opened");
+            response.addProperty("msg", "Connected to peer");
+            response.addProperty("host", host);
             response.addProperty("port", port);
+
         } catch (IllegalStateException e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.addProperty("msg", e.getMessage());
-        } catch (Exception e) {
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.addProperty("msg", "Failed to open TCP port");
+
+        } catch (IOException e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_GATEWAY);
+            response.addProperty("msg", "Failed to connect to remote peer");
         }
 
+        write(resp, response);
+    }
+
+    private void write(HttpServletResponse resp, JsonObject json) throws IOException {
         resp.setContentType("application/json");
-        resp.getWriter().write(gson.toJson(response));
+        resp.getWriter().write(gson.toJson(json));
     }
 }

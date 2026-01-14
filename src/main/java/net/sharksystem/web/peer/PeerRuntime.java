@@ -3,16 +3,19 @@ package net.sharksystem.web.peer;
 import java.io.File;
 import java.util.Map;
 import java.util.List;
+import java.net.Socket;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.io.IOException;
-import java.net.Socket;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import net.sharksystem.asap.*;
 import net.sharksystem.SharkPeerFS;
 import net.sharksystem.fs.ExtraData;
+import net.sharksystem.pki.PKIHelper;
 import net.sharksystem.fs.ExtraDataFS;
 import net.sharksystem.SharkException;
+import net.sharksystem.pki.CredentialMessage;
 import net.sharksystem.pki.SharkPKIComponent;
 import net.sharksystem.asap.utils.PeerIDHelper;
 import net.sharksystem.asap.crypto.ASAPKeyStore;
@@ -20,10 +23,11 @@ import net.sharksystem.hub.HubConnectionManager;
 import net.sharksystem.hub.HubConnectionManagerImpl;
 import net.sharksystem.pki.SharkPKIComponentFactory;
 import net.sharksystem.utils.streams.StreamPairImpl;
-import net.sharksystem.web.peer.PeerRuntime.EncounterLog;
 import net.sharksystem.asap.crypto.InMemoASAPKeyStore;
 import net.sharksystem.asap.crypto.ASAPCryptoAlgorithms;
+import net.sharksystem.web.peer.PeerRuntime.EncounterLog;
 import net.sharksystem.asap.apps.TCPServerSocketAcceptor;
+import net.sharksystem.web.pki.CredentialReceivedListener;
 import net.sharksystem.hub.peerside.HubConnectorDescription;
 import net.sharksystem.app.messenger.SharkNetMessengerComponent;
 import net.sharksystem.app.messenger.SharkNetMessengerComponentFactory;
@@ -75,6 +79,7 @@ public final class PeerRuntime {
     // App settings
     private boolean rememberNewHubConnections = true;
     private boolean hubReconnect = true;
+    private CredentialReceivedListener credentialListener;
 
     public PeerRuntime(String peerName) throws SharkException, IOException {
         this(peerName, 10); // default sync interval
@@ -139,6 +144,10 @@ public final class PeerRuntime {
         if (!active) {
             sharkPeer.start(asapPeer);
             active = true;
+
+            //Add CredentialReceivedListener for this peer
+            this.credentialListener = new CredentialReceivedListener(this);
+            this.pkiComponent.setSharkCredentialReceivedListener(credentialListener);
         }
     }
 
@@ -338,5 +347,66 @@ public final class PeerRuntime {
                 ),
                 ASAPEncounterConnectionType.INTERNET
         );
+    }
+
+    private final List<CredentialMessage> pendingCredentialMessages = new CopyOnWriteArrayList<>();
+
+    public void addPendingCredentialMessage(CredentialMessage msg) {
+        pendingCredentialMessages.add(msg);
+    }
+
+    public List<CredentialMessage> getPendingCredentialMessages() {
+        return pendingCredentialMessages;
+    }
+
+    /** method to accept or refuse a pending credential message by its index */
+    private CredentialMessage actionOnPendingCredentialMessageOnIndex(
+            int index,
+            boolean accept
+    ) throws ASAPSecurityException, IOException {
+
+        if (index < 1) {
+            throw new IllegalArgumentException("minimal index is 1");
+        }
+
+        if (this.pendingCredentialMessages.size() < index) {
+            throw new IllegalArgumentException(
+                    "index " + index + " exceeds maximum of "
+                            + this.pendingCredentialMessages.size()
+            );
+        }
+
+        // convert to 0-based index
+        index--;
+
+        CredentialMessage actioned =
+                this.pendingCredentialMessages.remove(index);
+
+        if (accept) {
+            try {
+                pkiComponent.getPersonValuesByName(actioned.getSubjectName());
+                actioned.setSubjectName(actioned.getSubjectID());
+            } catch (ASAPException ignored) {
+                // peer name not known yet → OK
+            }
+
+            pkiComponent.acceptAndSignCredential(actioned);
+        }
+
+        return actioned;
+    }
+
+    /** Accept and process a pending credential message by its index */
+    public CredentialMessage acceptPendingCredentialMessageOnIndex(int index)
+            throws ASAPSecurityException, IOException {
+
+        return this.actionOnPendingCredentialMessageOnIndex(index, true);
+    }
+
+    /** Refuse a pending credential message by its index */
+    public CredentialMessage refusePendingCredentialMessageOnIndex(int index)
+            throws ASAPSecurityException, IOException {
+
+        return this.actionOnPendingCredentialMessageOnIndex(index, false);
     }
 }
