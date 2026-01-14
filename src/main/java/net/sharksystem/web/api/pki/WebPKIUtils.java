@@ -1,11 +1,18 @@
 package net.sharksystem.web.api.pki;
 
+import net.sharksystem.SharkException;
+import net.sharksystem.asap.ASAPException;
 import net.sharksystem.pki.SharkPKIComponent;
 import net.sharksystem.asap.pki.ASAPCertificate;
+import net.sharksystem.asap.persons.PersonValues;
+import net.sharksystem.asap.persons.PersonValues;
+import net.sharksystem.asap.ASAPSecurityException;
 import net.sharksystem.asap.ASAPEncounterConnectionType;
 import net.sharksystem.asap.crypto.ASAPCryptoAlgorithms;
+import net.sharksystem.app.messenger.SharkNetMessengerException;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.HashMap;
 import java.security.NoSuchAlgorithmException;
 
@@ -72,5 +79,56 @@ public class WebPKIUtils {
         else if(ia < 4) return("bad");
 
         return("enough?");
+    }
+
+    /**
+     * Resolve a unique PersonValues by name.
+     *
+     * @param name peer name
+     * @param pki  SharkPKIComponent
+     * @return PersonValues
+     * @throws ASAPException if none found
+     * @throws SharkException if more than one found
+     */
+    public static PersonValues getUniquePersonValues(
+            String name,
+            SharkPKIComponent pki
+    ) throws ASAPException, SharkException {
+
+        Set<PersonValues> persons = pki.getPersonValuesByName(name);
+
+        if (persons == null || persons.isEmpty()) {
+            throw new ASAPException("no person found with name " + name);
+        }
+
+        if (persons.size() > 1) {
+            throw new SharkException(
+                    "problem: more than one persons found with name " + name
+            );
+        }
+
+        return persons.iterator().next();
+    }
+
+    public String getIAString(CharSequence peerID) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ia (");
+        sb.append(peerID);
+        sb.append("): ");
+
+        int ia = 0;
+        try {
+            ia = pki.getIdentityAssurance(peerID);
+        } catch (ASAPSecurityException e) {
+            if(pki.getOwnerID().equals(peerID)) {
+                ia = 10;
+            }
+        }
+        sb.append(ia);
+        sb.append(" (");
+        sb.append(WebPKIUtils.getIAExplainText(ia));
+        sb.append(") ");
+
+        return sb.toString();
     }
 }
