@@ -126,8 +126,8 @@
                             <div style="font-weight: 700; margin-bottom: 16px;">Connect to Peer</div>
                             <div class="form-group">
                                 <label class="form-label">Peer Address</label>
-                                <input type="text" id="peerAddress" class="form-control"
-                                    placeholder="e.g., 192.168.1.100">
+                                <input type="text" id="peerAddress" class="form-control" placeholder="e.g., localhost"
+                                    value="localhost">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Port</label>
@@ -151,6 +151,26 @@
                                     <tr>
                                         <td colspan="3" style="text-align: center; color: var(--text-muted);">Loading
                                             active ports...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Active Connections Table -->
+                        <div class="card network-section">
+                            <div class="section-title">Established Connections</div>
+                            <table class="active-ports-table">
+                                <thead>
+                                    <tr>
+                                        <th>Remote Address</th>
+                                        <th>Remote Port</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="activeConnectionsList">
+                                    <tr>
+                                        <td colspan="3" style="text-align: center; color: var(--text-muted);">Loading
+                                            connections...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -192,6 +212,7 @@
                 })
                     .then(r => r.json())
                     .then(data => {
+                        // 1. Update Active Ports (Server Servers)
                         const list = document.getElementById('activePortsList');
                         list.innerHTML = "";
                         if (data.openPorts && data.openPorts.length > 0) {
@@ -207,6 +228,30 @@
                             });
                         } else {
                             list.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No active TCP ports.</td></tr>';
+                        }
+
+                        // 2. Update Active Connections (Clients)
+                        const connList = document.getElementById('activeConnectionsList');
+                        connList.innerHTML = "";
+
+                        // Note: The API currently returns 'openPorts' (servers). 
+                        // To show clients, we might need to rely on what the backend offers.
+                        // However, strictly speaking, `data.connections` or similar would be needed. 
+                        // If the API only gives ports, we can only show ports. 
+                        // Assuming 'data.connections' might exist in a future or full version of the API, or we can just infer for now.
+                        // Let's check if 'data.connections' is returned (it wasn't in previous steps, but let's handle it if it does).
+
+                        if (data.connections && data.connections.length > 0) {
+                            data.connections.forEach(conn => {
+                                const tr = document.createElement('tr');
+                                tr.innerHTML =
+                                    '<td>' + (conn.remoteAddress || 'Unknown') + '</td>' +
+                                    '<td>' + (conn.remotePort || '-') + '</td>' +
+                                    '<td><span class="badge badge-green">Connected</span></td>';
+                                connList.appendChild(tr);
+                            });
+                        } else {
+                            connList.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No outgoing connections visible.</td></tr>';
                         }
                     });
             }

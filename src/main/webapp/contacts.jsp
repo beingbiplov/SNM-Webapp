@@ -107,7 +107,7 @@
 
             async function startPeer(peerId) {
                 try {
-                    const res = await fetch('api/start/' + peerId, { method: 'POST' });
+                    const res = await fetch('api/start/' + encodeURIComponent(peerId), { method: 'POST' });
                     if (res.ok) {
                         loadContacts();
                         location.reload();
@@ -123,7 +123,7 @@
 
             async function stopPeer(peerId) {
                 try {
-                    const res = await fetch('api/stop/' + peerId, { method: 'POST' });
+                    const res = await fetch('api/stop/' + encodeURIComponent(peerId), { method: 'POST' });
                     if (res.ok) {
                         loadContacts();
                         location.reload();

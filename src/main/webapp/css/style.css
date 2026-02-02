@@ -243,6 +243,7 @@ header {
   border-color: #d1d5db;
 }
 
+
 .btn-danger {
   background-color: var(--red);
   color: white;
@@ -251,6 +252,21 @@ header {
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
+}
+
+.btn-outline-danger {
+  background: white;
+  border: 1px solid var(--red);
+  color: var(--red);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-outline-danger:hover {
+  background: #fef2f2;
 }
 
 /* Inputs */
@@ -432,38 +448,57 @@ textarea:focus {
 /* --- Messenger Main Page Specifics --- */
 .messenger-grid {
   display: grid;
-  grid-template-columns: 240px 1fr 340px;
-  /* Specific widths from design */
+  grid-template-columns: 220px 1fr 240px;
+  /* Reduced sidebars, increased chat width */
   gap: 0;
-  /* Gaps handled by padding/borders */
-  border: 1px solid var(--border-color);
-  /* The specific container border */
-  border-radius: 8px;
+  /* Glassmorphism Effect */
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+  border-radius: 16px;
   overflow: hidden;
-  /* For proper corners */
-  min-height: 600px;
+  height: calc(100vh - 240px);
+  /* Increased gap for bottom spacing */
+  min-height: 400px;
 }
 
 .col-channels {
-  background-color: #f9fafb;
-  /* Light gray sidebar for channels */
-  border-right: 1px solid var(--border-color);
-  padding: 24px;
+  background-color: rgba(249, 250, 251, 0.4);
+  border-right: 1px solid rgba(229, 231, 235, 0.5);
+  padding: 24px 16px;
+  /* Slightly tighter padding */
 }
 
 .col-chat {
-  background-color: white;
+  background-color: transparent;
   display: flex;
   flex-direction: column;
-  padding: 24px 32px;
+  padding: 0;
+  /* Removing parent padding to push scrollbar to edge */
+  overflow: hidden;
+  /* Constrain this column to the grid row height */
+}
+
+.chat-header {
+  padding: 24px 32px 0 32px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .col-info {
-  background-color: #f3f4f6;
-  /* Technical info gray background */
-  border-left: 1px solid var(--border-color);
+  background-color: rgba(243, 244, 246, 0.4);
+  border-left: 1px solid rgba(229, 231, 235, 0.5);
   padding: 24px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+  /* Smaller font as requested */
+  color: #9ca3af;
+  /* Light gray text */
 }
 
 /* Chat Specifics */
@@ -473,6 +508,11 @@ textarea:focus {
   font-size: 0.85rem;
   margin-bottom: 24px;
   color: #374151;
+  overflow-y: auto;
+  height: 0;
+  padding: 0 32px;
+  /* Content padding */
+  /* Important for flex child scroll */
 }
 
 .chat-log p {
@@ -490,6 +530,10 @@ textarea:focus {
   margin-right: 8px;
 }
 
+.chat-input-wrapper {
+  padding: 0 32px 24px 32px;
+}
+
 .chat-input-wrapper textarea {
   width: 100%;
   height: 80px;
@@ -505,20 +549,34 @@ textarea:focus {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
-  font-weight: 500;
-  color: var(--text-muted);
-  font-size: 0.9rem;
+  margin-bottom: 4px;
+  font-weight: 400;
+  /* Lighter weight */
+  color: #9ca3af;
+  /* Lighter color */
+  font-size: 0.85rem;
+  /* Smaller size */
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.channel-item:hover {
+  background-color: #eee;
+  color: var(--text-main);
 }
 
 .channel-item.active {
   color: var(--text-main);
   font-weight: 600;
+  background-color: #e5e7eb;
 }
 
 .status-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  /* Smaller dots */
+  height: 6px;
   border-radius: 50%;
 }
 
@@ -538,9 +596,11 @@ textarea:focus {
 .tech-label {
   display: block;
   font-weight: 600;
-  margin-bottom: 4px;
-  color: var(--text-main);
-  margin-top: 16px;
+  margin-bottom: 2px;
+  color: #6b7280;
+  /* Muted label */
+  margin-top: 12px;
+  font-size: 0.75rem;
 }
 
 .tech-label:first-child {
@@ -550,8 +610,10 @@ textarea:focus {
 .tech-value {
   display: block;
   font-family: var(--font-mono);
-  color: var(--text-muted);
+  color: #9ca3af;
+  /* Very light value */
   word-break: break-all;
+  font-size: 0.75rem;
 }
 
 /* Utility Styles */

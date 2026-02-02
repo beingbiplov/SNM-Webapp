@@ -29,6 +29,7 @@ public class ChannelsServlet extends HttpServlet {
 
     private final PeerRuntimeManager manager = PeerRuntimeManager.getInstance();
     private final Gson gson = new Gson();
+
     private static class CreateChannelRequest {
         String uri;
         String name;
@@ -63,8 +64,7 @@ public class ChannelsServlet extends HttpServlet {
 
             int index = 1;
             for (CharSequence uri : uris) {
-                SharkNetMessengerChannel channel =
-                        messenger.getChannel(uri);
+                SharkNetMessengerChannel channel = messenger.getChannel(uri);
 
                 JsonObject ch = new JsonObject();
                 ch.addProperty("index", index++);
@@ -72,14 +72,12 @@ public class ChannelsServlet extends HttpServlet {
                         "name",
                         channel.getName() != null
                                 ? channel.getName().toString()
-                                : "<no name set>"
-                );
+                                : "<no name set>");
                 ch.addProperty("uri", uri.toString());
 
-                int messageCount =
-                        channel.getMessages() != null
-                                ? channel.getMessages().size()
-                                : 0;
+                int messageCount = channel.getMessages() != null
+                        ? channel.getMessages().size()
+                        : 0;
 
                 ch.addProperty("messages", messageCount);
                 ch.addProperty("age", "unknown");
@@ -115,8 +113,7 @@ public class ChannelsServlet extends HttpServlet {
             return;
         }
 
-        SharkNetMessengerComponent messenger =
-                peer.getMessengerComponent();
+        SharkNetMessengerComponent messenger = peer.getMessengerComponent();
         if (messenger == null) {
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             result.addProperty("error", "Messenger component not available");
@@ -147,8 +144,7 @@ public class ChannelsServlet extends HttpServlet {
             result.addProperty("status", "noop");
             result.addProperty(
                     "message",
-                    "nothing to do; channel already exists: " + uri
-            );
+                    "nothing to do; channel already exists: " + uri);
             result.addProperty("uri", uri);
             write(resp, result);
 
@@ -160,8 +156,7 @@ public class ChannelsServlet extends HttpServlet {
                 JsonObject channel = new JsonObject();
                 channel.addProperty(
                         "name",
-                        name != null ? name : "<no name set>"
-                );
+                        name != null ? name : "<no name set>");
                 channel.addProperty("uri", uri);
 
                 resp.setStatus(HttpServletResponse.SC_CREATED);
@@ -176,6 +171,57 @@ public class ChannelsServlet extends HttpServlet {
                 write(resp, result);
             }
         }
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        JsonObject result = new JsonObject();
+
+        PeerRuntime peer = manager.getActivePeer();
+        if (peer == null) {
+            resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            result.addProperty("error", "No active peer");
+            write(resp, result);
+            return;
+        }
+
+        SharkNetMessengerComponent messenger = peer.getMessengerComponent();
+        if (messenger == null) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            result.addProperty("error", "Messenger component not available");
+            write(resp, result);
+            return;
+        }
+
+        JsonObject body;
+        try (Reader reader = req.getReader()) {
+            body = gson.fromJson(reader, JsonObject.class);
+        } catch (Exception e) {
+            result.addProperty("error", "Invalid JSON");
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            write(resp, result);
+            return;
+        }
+
+        if (body == null || !body.has("uri")) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            result.addProperty("error", "channel uri is required");
+            write(resp, result);
+            return;
+        }
+
+        String uri = body.get("uri").getAsString();
+
+        try {
+            messenger.removeChannel(uri);
+            resp.setStatus(HttpServletResponse.SC_OK);
+            result.addProperty("status", "deleted");
+            result.addProperty("uri", uri);
+        } catch (Exception e) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            result.addProperty("error", e.getMessage());
+        }
+        write(resp, result);
     }
 
     private void write(HttpServletResponse resp, JsonObject json)
