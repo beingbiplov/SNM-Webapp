@@ -5,8 +5,16 @@ let currentSettings = {};
 function loadPeerStatus() {
     if (!window.currentActivePeerId) return;
 
-    fetch(`/snm-webapp/api/peer/status/${window.currentActivePeerId}`)
-        .then(r => r.json())
+    const peerId = encodeURIComponent(window.currentActivePeerId);
+    console.log('Loading status for peer:', peerId);
+
+    fetch(`/snm-webapp/api/peer/status/${peerId}`)
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => { throw new Error(`Status ${response.status}: ${text}`) });
+            }
+            return response.json();
+        })
         .then(data => {
             displayPeerStatus(data);
             displayAppSettings(data.appSettings || {});
@@ -17,7 +25,7 @@ function loadPeerStatus() {
         .catch(err => {
             console.error('Failed to load peer status:', err);
             document.getElementById('peer-status-content').innerHTML =
-                '<div style="color: red; text-align: center;">Failed to load peer status</div>';
+                `<div style="color: red; text-align: center;">Failed to load peer status: ${err.message}</div>`;
         });
 }
 
