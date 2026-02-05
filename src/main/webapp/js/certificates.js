@@ -6,6 +6,13 @@ let trustLevelCache = new Map(); // Cache trust levels to avoid repeated API cal
 let lastRefreshTime = 0;
 const REFRESH_INTERVAL = 15000; // 15 seconds instead of 5
 
+// Global state for filtering
+let currentFilter = {
+    type: 'all',
+    issuer: '',
+    subject: '',
+    trust: ''
+};
 
 function formatCertificateDate(value, withTime) {
     if (value === undefined || value === null) return 'Unknown';
@@ -603,26 +610,246 @@ function filterCertificates() {
 
 // Modal functions
 function showImportModal() {
-    document.getElementById('import-modal').style.display = 'block';
+    document.getElementById('import-modal').classList.remove('hidden');
 }
 
 function hideImportModal() {
-    document.getElementById('import-modal').style.display = 'none';
+    document.getElementById('import-modal').classList.add('hidden');
 }
 
 function hideDetailsModal() {
-    document.getElementById('details-modal').style.display = 'none';
+    document.getElementById('details-modal').classList.add('hidden');
 }
 
 // Close modals when clicking outside
 window.onclick = function (event) {
     const importModal = document.getElementById('import-modal');
     const detailsModal = document.getElementById('details-modal');
+    const revokeModal = document.getElementById('revoke-modal');
 
     if (event.target === importModal) {
         hideImportModal();
     }
     if (event.target === detailsModal) {
         hideDetailsModal();
+    }
+    if (event.target === revokeModal) {
+        hideRevokeModal();
+    }
+}
+
+// Advanced Filtering Functions
+function onFilterTypeChange() {
+    const filterType = document.getElementById('filter-type').value;
+    
+    // Hide all filter sections
+    document.getElementById('issuer-filter').style.display = 'none';
+    document.getElementById('subject-filter').style.display = 'none';
+    document.getElementById('trust-filter').style.display = 'none';
+    
+    // Show relevant filter section
+    if (filterType === 'issuer') {
+        document.getElementById('issuer-filter').style.display = 'block';
+        loadIssuerOptions();
+    } else if (filterType === 'subject') {
+        document.getElementById('subject-filter').style.display = 'block';
+        loadSubjectOptions();
+    } else if (filterType === 'trust') {
+        document.getElementById('trust-filter').style.display = 'block';
+    }
+}
+
+async function loadIssuerOptions() {
+    try {
+        const response = await fetch('/snm-webapp/api/persons');
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        const select = document.getElementById('issuer-select');
+        
+        select.innerHTML = '<option value="">All Issuers</option>';
+        
+        if (data.persons && data.persons.length > 0) {
+            data.persons.forEach(person => {
+                const option = document.createElement('option');
+                option.value = person.id;
+                option.textContent = person.name || person.id;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading issuer options:', error);
+    }
+}
+
+async function loadSubjectOptions() {
+    try {
+        const response = await fetch('/snm-webapp/api/persons');
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        const select = document.getElementById('subject-select');
+        
+        select.innerHTML = '<option value="">All Subjects</option>';
+        
+        if (data.persons && data.persons.length > 0) {
+            data.persons.forEach(person => {
+                const option = document.createElement('option');
+                option.value = person.id;
+                option.textContent = person.name || person.id;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading subject options:', error);
+    }
+}
+
+async function applyFilter() {
+    const filterType = document.getElementById('filter-type').value;
+    
+    if (filterType === 'all') {
+        clearFilter();
+        return;
+    }
+    
+    let apiUrl = '/snm-webapp/api/pki/certificates';
+    let params = new URLSearchParams();
+    
+    if (filterType === 'issuer') {
+        apiUrl = '/snm-webapp/api/pki/certsByIssuer';
+        const issuerId = document.getElementById('issuer-select').value;
+        if (issuerId) params.append('issuerId', issuerId);
+    } else if (filterType === 'subject') {
+        apiUrl = '/snm-webapp/api/pki/certsBySubject';
+        const subjectId = document.getElementById('subject-select').value;
+        if (subjectId) params.append('subjectId', subjectId);
+    } else if (filterType === 'trust') {
+        filterByTrustLevel();
+        return;
+    }
+    
+    try {
+        const url = params.toString() ? `${apiUrl}?${params.toString()}` : apiUrl;
+        const response = await fetch(url);
+        
+        if (!response.ok) throw new Error('Failed to apply filter');
+        
+        const data = await response.json();
+        certificates = data.certificates || [];
+        displayCertificates();
+        
+        showFilterStatus(filterType);
+        
+    } catch (error) {
+        console.error('Error applying filter:', error);
+        alert('Failed to apply filter: ' + error.message);
+    }
+}
+
+function filterByTrustLevel() {
+    const trustLevel = document.getElementById('trust-select').value;
+    
+    if (!trustLevel) {
+        displayCertificates();
+        return;
+    }
+    
+    const filtered = certificates.filter(cert => {
+        return cert.trustLevel === parseInt(trustLevel);
+    });
+    
+    displayFilteredCertificates(filtered);
+    showFilterStatus('trust');
+}
+
+function displayFilteredCertificates(filteredCerts) {
+    const tbody = document.getElementById('certificates-tbody');
+    
+    if (filteredCerts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="loading-state">No certificates found with current filter</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = filteredCerts.map(cert => createCertificateRow(cert)).join('');
+}
+
+function clearFilter() {
+    document.getElementById('filter-type').value = 'all';
+    document.getElementById('issuer-filter').style.display = 'none';
+    document.getElementById('subject-filter').style.display = 'none';
+    document.getElementById('trust-filter').style.display = 'none';
+    
+    loadCertificates();
+    hideFilterStatus();
+}
+
+function showFilterStatus(filterType) {
+    hideFilterStatus();
+    
+    const status = document.createElement('span');
+    status.className = 'filter-status active';
+    status.textContent = `Filter: ${filterType.charAt(0).toUpperCase() + filterType.slice(1)}`;
+    
+    const header = document.querySelector('.trusted-section .card-title');
+    if (header) {
+        header.appendChild(status);
+    }
+}
+
+function hideFilterStatus() {
+    const existingStatus = document.querySelector('.filter-status');
+    if (existingStatus) {
+        existingStatus.remove();
+    }
+}
+
+// Certificate Revocation Functions
+function showRevokeModal(subjectId, subjectName) {
+    document.getElementById('revoke-subject-id').value = subjectId;
+    document.getElementById('revoke-subject-name').value = subjectName;
+    document.getElementById('revoke-modal').classList.remove('hidden');
+}
+
+function hideRevokeModal() {
+    document.getElementById('revoke-modal').classList.add('hidden');
+    document.getElementById('revoke-subject-id').value = '';
+    document.getElementById('revoke-subject-name').value = '';
+}
+
+async function revokeCertificate() {
+    const subjectId = document.getElementById('revoke-subject-id').value;
+    
+    if (!subjectId) {
+        alert('Subject ID is required for revocation');
+        return;
+    }
+    
+    if (!confirm('Are you sure you want to revoke this certificate? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/snm-webapp/api/pki/revokeCertificate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `subjectId=${encodeURIComponent(subjectId)}`
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert('Certificate revoked successfully!');
+            hideRevokeModal();
+            refreshCertificates();
+        } else {
+            alert('Failed to revoke certificate: ' + (result.msg || 'Unknown error'));
+        }
+        
+    } catch (error) {
+        console.error('Error revoking certificate:', error);
+        alert('Error revoking certificate. Please try again.');
     }
 }

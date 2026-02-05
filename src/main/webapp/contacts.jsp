@@ -4,7 +4,7 @@
 
     <head>
         <meta charset="UTF-8">
-        <title>Contacts - SharkNet</title>
+        <title>Peer Management - SharkNet</title>
         <link rel="stylesheet" href="css/style.css?v=3">
     </head>
 
@@ -19,14 +19,14 @@
                     <div class="page-container">
                         <div class="page-header">
                             <div>
-                                <div class="page-title">Contact & Peer Management</div>
-                                <div class="page-subtitle">Manage your connections and peer status.</div>
+                                <div class="page-title">Peer Management</div>
+                                <div class="page-subtitle">Manage SharkNet peer instances and their status.</div>
                             </div>
-                            <button class="btn-primary" onclick="createNewPeer()">Add New Contact</button>
+                            <button class="btn-primary" onclick="createNewPeer()">Add New Peer</button>
                         </div>
 
                         <div class="card">
-                            <input type="text" class="search-bar" placeholder="🔍 Search Peer ID or Certificate...">
+                            <input type="text" class="search-bar" placeholder="🔍 Search Peer ID or Name...">
 
                             <table class="data-table">
                                 <thead>

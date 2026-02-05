@@ -5,7 +5,10 @@
             <span class="nav-icon">💬</span> Messenger
         </a>
         <a href="contacts.jsp" class="nav-item ${activePage == 'contacts' ? 'active' : ''}">
-            <span class="nav-icon">👥</span> Contacts
+            <span class="nav-icon">👥</span> Peer
+        </a>
+        <a href="persons.jsp" class="nav-item ${activePage == 'persons' ? 'active' : ''}">
+            <span class="nav-icon">👤</span> Persons
         </a>
         <a href="certificates.jsp" class="nav-item ${activePage == 'certificates' ? 'active' : ''}">
             <span class="nav-icon">🔑</span> Certificates

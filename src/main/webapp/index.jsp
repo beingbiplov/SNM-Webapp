@@ -11,6 +11,7 @@
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>SharkNet Messenger</title>
           <link rel="stylesheet" href="css/style.css?v=8">
+          <link rel="stylesheet" href="css/messenger-enhanced.css?v=1">
         </head>
 
         <body>
@@ -21,86 +22,122 @@
               <jsp:include page="sidebar.jsp" />
 
               <div class="content-wrapper">
-                <div class="page-container">
-                  <!-- Main Header (Welcome Message) -->
-                  <div style="margin-bottom: 16px">
-                    <h1
-                      style="font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; font-weight: 700; margin-bottom: 8px;">
-                      Welcome to SharkNetMessenger
-                    </h1>
-                    <p style="color: var(--text-muted);">Your decentralized research communication platform.</p>
-                  </div>
-
-                  <div class="messenger-grid">
-                    <!-- 1. Channels Col -->
-                    <div class="col-channels" id="channel-list">
+                <div class="messenger-grid">
+                  <!-- Channels Column -->
+                  <div class="col-channels" id="channel-list">
+                    <div class="channels-header">
+                      <h3>Channels</h3>
+                    </div>
+                    <div class="channel-list">
                       <div style="text-align: center; padding: 20px; color: #666;">
                         Loading channels...
                       </div>
                     </div>
+                  </div>
 
-                    <!-- 2. Chat Col -->
-                    <div class="col-chat">
-                      <div class="chat-header">
-                        <span id="current-channel-name">Select a channel</span>
-                        <span id="current-channel-pki-status"
-                          style="font-size: 0.8rem; font-weight: normal; color: #666;"></span>
-                      </div>
-
-                      <div class="chat-log" id="chat-log">
-                        <div
-                          style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #999;">
-                          <p>Select a channel from the left to view messages.</p>
+                  <!-- Chat Column -->
+                  <div class="col-chat">
+                    <div class="chat-header">
+                      <div class="chat-title" id="current-channel-name">Select a channel</div>
+                      <div class="chat-subtitle">
+                        <div class="chat-status">
+                          <span class="status-dot"></span>
+                          <span id="current-channel-pki-status">Ready</span>
                         </div>
-                      </div>
-
-                      <div class="chat-input-wrapper">
-                        <textarea id="message-input" placeholder="Type your message here..."></textarea>
-                        <button id="send-btn" class="btn-primary" style="width: 100%;" onclick="sendMessage()">Send
-                          Message</button>
                       </div>
                     </div>
 
-                    <!-- 3. Info Col -->
-                    <div class="col-info">
-                      <div
-                        style="font-weight: 700; margin-bottom: 20px; font-family: 'JetBrains Mono', monospace; color: #6b7280;">
-                        Technical Info
+                    <div class="chat-log" id="chat-log">
+                      <div class="chat-welcome">
+                        <div class="chat-welcome-icon">💬</div>
+                        <h3>Welcome to SharkNet Messenger</h3>
+                        <p>Select a channel from the left to start messaging</p>
                       </div>
+                    </div>
 
-                      <span class="tech-label">Selected Peer ID:</span>
-                      <span class="tech-value">
-                        <%= activePeer !=null ? activePeer.getPeerID() : "Unknown" %>
-                      </span>
+                    <div class="chat-input-wrapper">
+                      <div class="message-options">
+                        <select id="message-receiver" class="recipient-select">
+                          <option value="ANY_SHARKNET_PEER">Anyone</option>
+                        </select>
+                        <div class="security-options">
+                          <div class="security-option">
+                            <input type="checkbox" id="sign-message" checked>
+                            <label for="sign-message">🔐 Sign</label>
+                          </div>
+                          <div class="security-option">
+                            <input type="checkbox" id="encrypt-message">
+                            <label for="encrypt-message">🔒 Encrypt</label>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="message-input-container">
+                        <textarea id="message-input" class="message-input" placeholder="Type your message here..."></textarea>
+                        <button id="send-btn" class="send-button" onclick="sendMessage()">Send</button>
+                      </div>
+                    </div>
+                  </div>
 
-                      <span class="tech-label">Active Channels:</span>
-                      <!-- We can update this via JS or just count initial ones. For now, let's leave it static or updated by JS if we want perfect sync. -->
-                      <span class="tech-value" id="active-channel-count">Loading...</span>
-
-                      <%-- <!-- Commented out as per user request to keep only available info -->
-                        <span class="tech-label">Routing Path:</span>
-                        <span class="tech-value">Local -> Peer A -> Peer B</span>
-
-                        <span class="tech-label">Encryption Status:</span>
-                        <span class="tech-value">AES-256 (E2EE) - Active</span>
-
-                        <span class="tech-label">Protocol Version:</span>
-                        <span class="tech-value">ASAP/1.0.3-beta</span>
-
-                        <span class="tech-label">Certificate Validity:</span>
-                        <span class="tech-value">2023-01-01 to 2024-01-01</span>
-
-                        <span class="tech-label">Session Start Time:</span>
-                        <span class="tech-value">14:28:00 UTC</span>
-
-                        <span class="tech-label">Ephemeral Key Status:</span>
-                        <span class="tech-value">Refreshed</span>
-                        --%>
+                  <!-- Info Column -->
+                  <div class="col-info">
+                    <div class="info-header">
+                      <h3>Technical Info</h3>
+                    </div>
+                    <div class="info-content">
+                      <div class="info-section">
+                        <h4>Peer Information</h4>
+                        <div class="info-item">
+                          <span class="info-label">Peer ID:</span>
+                          <span class="info-value"><%= activePeer !=null ? activePeer.getPeerID() : "Unknown" %></span>
+                        </div>
+                        <div class="info-item">
+                          <span class="info-label">Status:</span>
+                          <span class="info-value">Active</span>
+                        </div>
+                      </div>
+                      
+                      <div class="info-section">
+                        <h4>Channel Statistics</h4>
+                        <div class="info-item">
+                          <span class="info-label">Active Channels:</span>
+                          <span class="info-value" id="active-channel-count">Loading...</span>
+                        </div>
+                        <div class="info-item">
+                          <span class="info-label">Total Messages:</span>
+                          <span class="info-value" id="total-messages">0</span>
+                        </div>
+                      </div>
+                      
+                      <div class="info-section">
+                        <h4>Security Settings</h4>
+                        <div class="info-item">
+                          <span class="info-label">Default Signing:</span>
+                          <span class="info-value">Enabled</span>
+                        </div>
+                        <div class="info-item">
+                          <span class="info-label">Default Encryption:</span>
+                          <span class="info-value">Disabled</span>
+                        </div>
+                      </div>
+                      
+                      <div class="info-section">
+                        <h4>Protocol Information</h4>
+                        <div class="info-item">
+                          <span class="info-label">Protocol:</span>
+                          <span class="info-value">ASAP/1.0</span>
+                        </div>
+                        <div class="info-item">
+                          <span class="info-label">Encryption:</span>
+                          <span class="info-value">E2EE Available</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-              <script src="js/messenger.js?v=13"></script>
+            </div>
+          </div>
+          <script src="js/messenger.js?v=13"></script>
         </body>
 
         </html>

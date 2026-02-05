@@ -6,6 +6,7 @@
     <meta charset="UTF-8">
     <title>Certificates - SharkNet</title>
     <link rel="stylesheet" href="css/style.css?v=3">
+    <link rel="stylesheet" href="css/certificates.css?v=1">
 </head>
 
 <body>
@@ -17,26 +18,24 @@
 
         <div class="content-wrapper">
             <div class="page-container">
-                <div class="page-header">
+                <div class="page-header certificates-header">
                     <div>
                         <div class="page-title">Certificate Management</div>
                         <div class="page-subtitle">Manage PKI credentials, trust stores, and identity certificates.</div>
                     </div>
                     <div>
                         <button class="btn-secondary" onclick="showImportModal()">Import Certificate</button>
-                        <button class="btn-primary" style="margin-left:8px;" onclick="refreshCertificates()">Refresh</button>
+                        <button class="btn-primary" onclick="refreshCertificates()">Refresh</button>
                     </div>
                 </div>
 
                 <!-- Your Identity Certificate -->
-                <div class="card" style="margin-bottom: 24px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div class="card identity-section">
+                    <div class="identity-header">
                         <div>
-                            <div class="card-title" style="font-weight:600; font-size:1.1rem; margin-bottom:4px;">
-                                Your Identity Certificate
-                            </div>
-                            <div style="color:var(--text-muted); font-size:0.9rem;">
-                                Peer ID: <span id="your-peer-id" style="font-family:var(--font-mono); color:var(--text-main);">Loading...</span>
+                            <div class="card-title identity-title">Your Identity Certificate</div>
+                            <div class="identity-peer-id">
+                                Peer ID: <span id="your-peer-id">Loading...</span>
                             </div>
                         </div>
                         <button class="btn-secondary" onclick="exportOwnCertificate()">Export Public Key</button>
@@ -44,23 +43,68 @@
                 </div>
 
                 <!-- Pending Credentials -->
-                <div class="card" style="margin-bottom: 24px;">
-                    <div class="card-title" style="font-weight:600; font-size:1.1rem; margin-bottom:16px;">
+                <div class="card pending-section">
+                    <div class="card-title pending-title">
                         Pending Credential Requests
-                        <span id="pending-count" class="badge badge-yellow" style="margin-left:8px;">0</span>
+                        <span id="pending-count" class="badge badge-yellow pending-count">0</span>
                     </div>
                     <div id="pending-credentials-container">
-                        <div style="text-align:center; padding:20px; color:var(--text-muted);">
-                            No pending credential requests
+                        <div class="pending-empty">No pending credential requests</div>
+                    </div>
+                </div>
+
+                <!-- Advanced Certificate Filtering -->
+                <div class="card">
+                    <div style="margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:16px;">
+                        <h3>Advanced Filtering</h3>
+                    </div>
+
+                    <div class="filter-controls">
+                        <div class="filter-group">
+                            <label>Filter by:</label>
+                            <select id="filter-type" class="form-control" onchange="onFilterTypeChange()">
+                                <option value="all">All Certificates</option>
+                                <option value="issuer">By Issuer</option>
+                                <option value="subject">By Subject</option>
+                                <option value="trust">By Trust Level</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group" id="issuer-filter" style="display:none;">
+                            <label>Issuer:</label>
+                            <select id="issuer-select" class="form-control">
+                                <option value="">All Issuers</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group" id="subject-filter" style="display:none;">
+                            <label>Subject:</label>
+                            <select id="subject-select" class="form-control">
+                                <option value="">All Subjects</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group" id="trust-filter" style="display:none;">
+                            <label>Trust Level:</label>
+                            <select id="trust-select" class="form-control">
+                                <option value="">All Levels</option>
+                                <option value="0">Unknown</option>
+                                <option value="1">Self-Signed</option>
+                                <option value="2">Verified</option>
+                                <option value="3">Highly Verified</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-actions">
+                            <button class="btn-primary" onclick="applyFilter()">Apply Filter</button>
+                            <button class="btn-secondary" onclick="clearFilter()">Clear</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Trusted Peer Certificates -->
-                <div class="card">
-                    <div class="card-title" style="font-weight:600; font-size:1.1rem; margin-bottom:16px;">
-                        Trusted Peer Certificates
-                    </div>
+                <div class="card trusted-section">
+                    <div class="card-title">Trusted Peer Certificates</div>
                     <input type="text" id="certificate-search" class="search-bar" placeholder="🔍 Search Certificates..." onkeyup="filterCertificates()">
 
                     <table class="data-table" id="certificates-table">
@@ -75,9 +119,7 @@
                         </thead>
                         <tbody id="certificates-tbody">
                             <tr>
-                                <td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">
-                                    Loading certificates...
-                                </td>
+                                <td colspan="5" class="loading-state">Loading certificates...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -86,8 +128,35 @@
         </div>
     </div>
 
+    <!-- Revoke Certificate Modal -->
+    <div id="revoke-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Revoke Certificate</h3>
+                <button class="modal-close" onclick="hideRevokeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Subject ID:</label>
+                    <input type="text" id="revoke-subject-id" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Certificate Subject:</label>
+                    <input type="text" id="revoke-subject-name" class="form-control" readonly>
+                </div>
+                <div class="warning-message">
+                    <strong>⚠️ Warning:</strong> This action cannot be undone. The certificate will be revoked and can no longer be used for verification.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="hideRevokeModal()">Cancel</button>
+                <button class="btn-danger" onclick="revokeCertificate()">Revoke Certificate</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Import Certificate Modal -->
-    <div id="import-modal" class="modal" style="display: none;">
+    <div id="import-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Import Certificate</h3>
@@ -111,8 +180,8 @@
     </div>
 
     <!-- Certificate Details Modal -->
-    <div id="details-modal" class="modal" style="display: none;">
-        <div class="modal-content" style="max-width: 600px;">
+    <div id="details-modal" class="modal hidden">
+        <div class="modal-content wide">
             <div class="modal-header">
                 <h3>Certificate Details</h3>
                 <button class="modal-close" onclick="hideDetailsModal()">&times;</button>
@@ -129,127 +198,5 @@
     </div>
 
     <script src="js/certificates.js?v=1"></script>
-
-    <style>
-        .modal {
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        .modal-content {
-            background-color: var(--bg-card);
-            margin: 5% auto;
-            padding: 0;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .modal-header h3 {
-            margin: 0;
-            color: var(--text-main);
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: var(--text-muted);
-        }
-
-        .modal-close:hover {
-            color: var(--text-main);
-        }
-
-        .modal-body {
-            padding: 20px;
-        }
-
-        .modal-footer {
-            padding: 20px;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-family: var(--font-mono);
-            font-size: 0.9rem;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
-        }
-
-        textarea.form-control {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .badge-green {
-            background: #dcfce7;
-            color: #16a34a;
-        }
-
-        .badge-yellow {
-            background: #fef3c7;
-            color: #d97706;
-        }
-
-        .btn-outline-danger {
-            border: 1px solid var(--red);
-            color: var(--red);
-            padding: 8px 12px;
-            border-radius: 6px;
-            background: white;
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
-
-        .btn-outline-danger:hover {
-            background: var(--red);
-            color: white;
-        }
-    </style>
 </body>
 </html>

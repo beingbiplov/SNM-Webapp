@@ -1,102 +1,94 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-    <!DOCTYPE html>
-    <html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 
-    <head>
-        <meta charset="UTF-8">
-        <title>Settings - SharkNet</title>
-        <link rel="stylesheet" href="css/style.css?v=3">
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <title>Settings - SharkNet</title>
+    <link rel="stylesheet" href="css/style.css?v=3">
+    <link rel="stylesheet" href="css/settings.css?v=1">
+</head>
 
-    <body>
-        <jsp:include page="header.jsp" />
+<body>
+    <jsp:include page="header.jsp" />
 
-        <div class="main-container">
-            <% request.setAttribute("activePage", "settings" ); %>
-                <jsp:include page="sidebar.jsp" />
+    <div class="main-container">
+        <% request.setAttribute("activePage", "settings" ); %>
+        <jsp:include page="sidebar.jsp" />
 
-                <!-- <div class="content-wrapper">
-                    <div class="page-container">
-                        <div class="page-header">
-                            <div>
-                                <div class="page-title">Settings & Configuration</div>
-                                <div class="page-subtitle">Adjust application parameters for network, security, and UI.
-                                </div>
-                            </div>
-                        </div>
-
-                     
-                        <div class="card settings-section">
-                            <div
-                                style="margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:16px;">
-                                <h3 style="font-size:1.1rem; font-weight:600;">Network Settings</h3>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Default Network Mode</label>
-                                <select
-                                    style="width:100%; padding:10px 12px; border:1px solid var(--border-color); border-radius:6px; background:white;">
-                                    <option value="internet">Internet</option>
-                                    <option value="adhoc">Ad-hoc Wi-Fi</option>
-                                    <option value="bluetooth">Bluetooth</option>
-                                </select>
-                                <div class="form-hint">Choose how SharkNetMessenger connects to peers.</div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Peer Discovery Mechanism</label>
-                                <input type="text" value="DNS-SD, DHT" disabled style="background:#f3f4f6;">
-                                <div class="form-hint">Comma-separated list of discovery methods.</div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Listen Port</label>
-                                <input type="number" value="9800">
-                            </div>
-                        </div>
-
-                    
-                        <div class="card settings-section">
-                            <div
-                                style="margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:16px;">
-                                <h3 style="font-size:1.1rem; font-weight:600;">PKI & Security Settings</h3>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" style="display:flex; align-items:center;">
-                                    <input type="checkbox" checked style="margin-right:10px; width:auto;">
-                                    Auto-verify new certificates
-                                </label>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Default Key Algorithm</label>
-                                <input type="text" value="RSA-4096">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Trust Store Path</label>
-                                <input type="text" value="/etc/sharknet/trust">
-                            </div>
-                        </div>
-
-                 
-                        <div class="card settings-section">
-                            <div
-                                style="margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:16px;">
-                                <h3 style="font-size:1.1rem; font-weight:600;">Configuration Management</h3>
-                            </div>
-
-                            <div style="display:flex; gap:12px;">
-                                <button class="btn-secondary">Export Configuration</button>
-                                <button class="btn-secondary">Import Configuration</button>
-                                <button class="btn-danger" style="margin-left:auto;">Reset to Defaults</button>
-                            </div>
-                        </div>
-
+        <div class="content-wrapper">
+            <div class="page-container">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title">Settings & Configuration</div>
+                        <div class="page-subtitle">Manage peer configuration and application settings.</div>
                     </div>
-                </div> -->
-        </div>
-    </body>
+                    <div>
+                        <button class="btn-primary" onclick="saveSettings()">Save Changes</button>
+                    </div>
+                </div>
 
-    </html>
+                <!-- Peer Status -->
+                <div class="card settings-section">
+                    <div style="margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:16px;">
+                        <h3>Peer Status</h3>
+                    </div>
+
+                    <div id="peer-status-content">
+                        <div class="loading">Loading peer status...</div>
+                    </div>
+                </div>
+
+                <!-- App Settings -->
+                <div class="card settings-section">
+                    <div style="margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:16px;">
+                        <h3>Application Settings</h3>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" style="display:flex; align-items:center;">
+                            <input type="checkbox" id="rememberNewHubConnections">
+                            Remember new hub connections
+                        </label>
+                        <div class="form-hint">Automatically save and reconnect to previously used hub connections.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" style="display:flex; align-items:center;">
+                            <input type="checkbox" id="hubReconnect">
+                            Enable hub reconnection
+                        </label>
+                        <div class="form-hint">Automatically attempt to reconnect to hubs when connection is lost.</div>
+                    </div>
+                </div>
+
+                <!-- PKI Status -->
+                <div class="card settings-section">
+                    <div style="margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:16px;">
+                        <h3>PKI Status</h3>
+                    </div>
+
+                    <div id="pki-status-content">
+                        <div class="loading">Loading PKI status...</div>
+                    </div>
+                </div>
+
+                <!-- Network Status -->
+                <div class="card settings-section">
+                    <div style="margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:16px;">
+                        <h3>Network Status</h3>
+                    </div>
+
+                    <div id="network-status-content">
+                        <div class="loading">Loading network status...</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="js/settings.js?v=1"></script>
+</body>
+
+</html>

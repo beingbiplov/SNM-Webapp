@@ -9,6 +9,7 @@ let currentChannelState = {
 
 document.addEventListener('DOMContentLoaded', () => {
     loadChannels();
+    loadPersonsForRecipient(); // Load available persons for recipient selection
 
     // Add enter key listener for textarea
     const input = document.getElementById('message-input');
@@ -36,18 +37,10 @@ async function loadChannels() {
 
         // Keep the header
         container.innerHTML = `
-            <div style="font-weight: 700; margin-bottom: 20px; font-family: 'JetBrains Mono', monospace; display: flex; justify-content: space-between; align-items: center;">
-                <span>Channels</span>
-                <button onclick="showCreateChannelModal()" style="font-size: 0.8rem; padding: 4px 8px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">+</button>
+            <div class="channels-header">
+                <h3>Channels</h3>
             </div>
-            <div id="create-channel-form" style="display: none; margin-bottom: 10px; padding: 10px; background: #f3f4f6; border-radius: 8px;">
-                <input type="text" id="new-channel-uri" placeholder="URI (e.g. #dev)" style="width: 100%; margin-bottom: 5px; padding: 5px; border-radius: 4px; border: 1px solid #ddd;">
-                <input type="text" id="new-channel-name" placeholder="Name" style="width: 100%; margin-bottom: 5px; padding: 5px; border-radius: 4px; border: 1px solid #ddd;">
-                <div style="display: flex; gap: 5px;">
-                    <button onclick="createChannel()" style="flex: 1; background: var(--primary-color); color: white; border: none; padding: 5px; border-radius: 4px; cursor: pointer;">Create</button>
-                    <button onclick="hideCreateChannelModal()" style="flex: 1; background: #ddd; color: #333; border: none; padding: 5px; border-radius: 4px; cursor: pointer;">Cancel</button>
-                </div>
-            </div>
+            <div class="channel-list">
         `;
 
         if (data.channels && data.channels.length > 0) {
@@ -58,21 +51,16 @@ async function loadChannels() {
                 // Pass index, name, uri
                 item.onclick = () => selectChannel(channel.uri, channel.name, channel.index);
 
-                // Determine dot color
-                const dotColor = 'dot-green';
-
                 item.innerHTML = `
-                    <div class="status-dot ${dotColor}"></div>
-                    <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onclick="selectChannel('${channel.uri}', '${channel.name}', ${channel.index})">
-                        <div style="font-weight: 600;">${channel.name}</div>
-                        <div style="font-size: 0.8rem; color: #666;">${channel.uri}</div>
+                    <div class="channel-info">
+                        <div class="channel-name">${channel.name}</div>
+                        <div class="channel-uri">${channel.uri}</div>
                     </div>
-                    <div style="display:flex; align-items:center; gap:5px;">
-                         <div style="font-size: 0.75rem; background: #eee; padding: 2px 6px; border-radius: 10px;">${channel.messages}</div>
-                         <button onclick="deleteChannel('${channel.uri}', event)" style="background:none; border:none; color:#ef4444; font-weight:bold; cursor:pointer; font-size:1.1rem; padding:0 4px;">&times;</button>
+                    <div class="channel-meta">
+                        <div class="channel-badge">${channel.messages}</div>
                     </div>
                 `;
-                container.appendChild(item);
+                container.querySelector('.channel-list').appendChild(item);
             });
 
             // Update info panel count
@@ -86,7 +74,7 @@ async function loadChannels() {
             empty.style.color = '#999';
             empty.style.fontSize = '0.9rem';
             empty.textContent = 'No channels yet.';
-            container.appendChild(empty);
+            container.querySelector('.channel-list').appendChild(empty);
 
             const countEl = document.getElementById('active-channel-count');
             if (countEl) countEl.textContent = '0';
@@ -277,17 +265,17 @@ async function sendMessage() {
 
     if (!content) return;
 
-    // POST /api/messenger/messages
-    // Body: { content, channelIndex, ... }
-
     try {
         const payload = {
             content: content,
             channelIndex: currentChannelState.index,
-            contentType: "ASAP_CHARACTER_SEQUENCE", // Optional default
-            sign: true,
-            encrypt: false
+            contentType: "ASAP_CHARACTER_SEQUENCE",
+            sign: document.getElementById('sign-message')?.checked !== false,
+            encrypt: document.getElementById('encrypt-message')?.checked === true,
+            receiver: document.getElementById('message-receiver')?.value || "ANY_SHARKNET_PEER"
         };
+
+        console.log('Sending message:', payload);
 
         const response = await fetch('/snm-webapp/api/messenger/messages', {
             method: 'POST',
@@ -300,9 +288,14 @@ async function sendMessage() {
         if (response.ok) {
             console.log('Message sent:', result);
             input.value = ''; // Clear input
+            
+            // Show success feedback
+            showSendSuccess(result);
+            
             // Reload messages to see the new one
-            // We need to wait a tiny bit perhaps? Or just reload immediately.
-            loadMessages(currentChannelState.uri);
+            setTimeout(() => {
+                loadMessages(currentChannelState.uri);
+            }, 500);
         } else {
             console.error('Send failed:', result);
             alert('Failed to send message: ' + (result.error || 'Unknown error'));
@@ -311,6 +304,45 @@ async function sendMessage() {
     } catch (error) {
         console.error('Error sending message:', error);
         alert('Error sending message');
+    }
+}
+
+// Show send success feedback
+function showSendSuccess(result) {
+    const sendBtn = document.getElementById('send-btn');
+    const originalText = sendBtn.textContent;
+    
+    sendBtn.textContent = '✓ Sent!';
+    sendBtn.style.background = 'var(--green)';
+    
+    setTimeout(() => {
+        sendBtn.textContent = originalText;
+        sendBtn.style.background = '';
+    }, 2000);
+}
+
+// Load available persons for recipient selection
+async function loadPersonsForRecipient() {
+    try {
+        const response = await fetch('/snm-webapp/api/persons');
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const select = document.getElementById('message-receiver');
+        
+        if (select && data.persons && data.persons.length > 0) {
+            // Clear existing options except "Anyone"
+            select.innerHTML = '<option value="ANY_SHARKNET_PEER">Anyone</option>';
+            
+            data.persons.forEach(person => {
+                const option = document.createElement('option');
+                option.value = person.name;
+                option.textContent = `${person.name} (${person.id.substring(0, 8)}...)`;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading persons for recipient selection:', error);
     }
 }
 
