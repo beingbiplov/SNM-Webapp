@@ -59,6 +59,17 @@ public class ListTCPServlet extends HttpServlet {
         response.addProperty("peerId", peerId);
         response.add("openPorts", portsArray);
 
+        // Collect active connections (clients)
+        JsonArray connectionsArray = new JsonArray();
+        for (PeerRuntime.ConnectionInfo info : peer.getActiveConnections()) {
+            JsonObject conn = new JsonObject();
+            conn.addProperty("remoteAddress", info.host);
+            conn.addProperty("remotePort", info.port);
+            conn.addProperty("timestamp", info.timestamp);
+            connectionsArray.add(conn);
+        }
+        response.add("connections", connectionsArray);
+
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.setContentType("application/json");
         resp.getWriter().write(gson.toJson(response));

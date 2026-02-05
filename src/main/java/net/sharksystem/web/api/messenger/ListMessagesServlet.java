@@ -44,13 +44,20 @@ public class ListMessagesServlet extends HttpServlet {
             return;
         }
 
-        String pathInfo = req.getPathInfo();
-        if (pathInfo == null || pathInfo.length() <= 1) {
+        String channelUri = req.getParameter("uri");
+
+        // Fallback to path info if query param is not present
+        if (channelUri == null || channelUri.isEmpty()) {
+            String pathInfo = req.getPathInfo();
+            if (pathInfo != null && pathInfo.length() > 1) {
+                channelUri = pathInfo.substring(1);
+            }
+        }
+
+        if (channelUri == null || channelUri.isEmpty()) {
             sendError(resp, "missing channel URI");
             return;
         }
-
-        String channelUri = pathInfo.substring(1);
 
         try {
             SharkNetMessengerComponent messenger = peer.getMessengerComponent();
@@ -68,13 +75,40 @@ public class ListMessagesServlet extends HttpServlet {
 
             JsonArray msgArray = new JsonArray();
 
+            List<SharkNetMessage> allMessages = new java.util.ArrayList<>();
             for (int i = 0; i < messages.size(); i++) {
-                SharkNetMessage msg = messages.getSharkMessage(i, true);
+                allMessages.add(messages.getSharkMessage(i, true));
+            }
+
+            // Sort by timestamp
+            allMessages.sort((m1, m2) -> {
+                try {
+                    return Long.compare(m1.getCreationTime(), m2.getCreationTime());
+                } catch (Exception e) {
+                    return 0;
+                }
+            });
+
+            for (int i = 0; i < allMessages.size(); i++) {
+                SharkNetMessage msg = allMessages.get(i);
                 JsonObject msgJson = new JsonObject();
 
+                // Note: The index here is just the position in the sorted display list,
+                // which might differ from the actual storage index if storage isn't sorted.
+                // But for display purposes, 1..N in time order is usually what the frontend
+                // expects.
                 msgJson.addProperty("index", i + 1);
                 msgJson.addProperty("contentType", msg.getContentType().toString());
-                msgJson.addProperty("content", msg.getContent() != null ? new String(msg.getContent()) : "");
+
+                String content = "";
+                try {
+                    byte[] bytes = msg.getContent();
+                    if (bytes != null)
+                        content = new String(bytes);
+                } catch (Exception e) {
+                    content = "[Error reading content]";
+                }
+                msgJson.addProperty("content", content);
 
                 // Sender
                 CharSequence senderID = msg.getSender();
@@ -87,7 +121,8 @@ public class ListMessagesServlet extends HttpServlet {
                 // Recipients
                 Set<CharSequence> recipients = msg.getRecipients();
                 JsonArray recipientsJson = new JsonArray();
-                for (CharSequence rcpt : recipients) recipientsJson.add(rcpt.toString());
+                for (CharSequence rcpt : recipients)
+                    recipientsJson.add(rcpt.toString());
                 msgJson.add("recipients", recipientsJson);
 
                 // Time
@@ -99,7 +134,7 @@ public class ListMessagesServlet extends HttpServlet {
                 e2eJson.addProperty("signed", msg.signed());
                 e2eJson.addProperty("verified", msg.verified());
 
-                if(msg.signed() && !pki.getOwnerID().equals(senderID)) {
+                if (msg.signed() && !pki.getOwnerID().equals(senderID)) {
                     e2eJson.addProperty("ia", WebPKIUtils.getIAExplainText(pki.getIdentityAssurance(senderID)));
                 }
 
@@ -108,7 +143,7 @@ public class ListMessagesServlet extends HttpServlet {
                 // Hops list
                 JsonArray hopsJson = new JsonArray();
                 List<ASAPHop> hops = msg.getASAPHopsList();
-                if(hops.isEmpty()) {
+                if (hops.isEmpty()) {
                     msgJson.addProperty("hopingList", "no hops");
                 } else {
                     for (ASAPHop hop : hops) {
@@ -121,7 +156,7 @@ public class ListMessagesServlet extends HttpServlet {
                             case ASAP_HUB -> "HUB";
                             case AD_HOC_LAYER_2_NETWORK -> "Ad-Hoc";
                             case ONION_NETWORK -> "Onion";
-                            default -> "Unknown";   
+                            default -> "Unknown";
                         };
                         hopJson.addProperty("via", via);
                         hopsJson.add(hopJson);
