@@ -11,7 +11,7 @@
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>SharkNet Messenger</title>
           <link rel="stylesheet" href="css/style.css?v=8">
-          <link rel="stylesheet" href="css/messenger-enhanced.css?v=1">
+          <link rel="stylesheet" href="css/messenger.css?v=2">
         </head>
 
         <body>
@@ -72,7 +72,8 @@
                         </div>
                       </div>
                       <div class="message-input-container">
-                        <textarea id="message-input" class="message-input" placeholder="Type your message here..."></textarea>
+                        <textarea id="message-input" class="message-input"
+                          placeholder="Type your message here..."></textarea>
                         <button id="send-btn" class="send-button" onclick="sendMessage()">Send</button>
                       </div>
                     </div>
@@ -88,56 +89,90 @@
                         <h4>Peer Information</h4>
                         <div class="info-item">
                           <span class="info-label">Peer ID:</span>
-                          <span class="info-value"><%= activePeer !=null ? activePeer.getPeerID() : "Unknown" %></span>
+                          <span class="info-value">
+                            <%= activePeer !=null ? activePeer.getPeerID() : "Unknown" %>
+                          </span>
                         </div>
                         <div class="info-item">
                           <span class="info-label">Status:</span>
                           <span class="info-value">Active</span>
                         </div>
                       </div>
-                      
+
                       <div class="info-section">
                         <h4>Channel Statistics</h4>
                         <div class="info-item">
                           <span class="info-label">Active Channels:</span>
                           <span class="info-value" id="active-channel-count">Loading...</span>
                         </div>
+                      </div>
+
+                      <div class="info-section">
+                        <h4>Network Status</h4>
                         <div class="info-item">
-                          <span class="info-label">Total Messages:</span>
-                          <span class="info-value" id="total-messages">0</span>
+                          <span class="info-label">Open Ports:</span>
+                          <span class="info-value">
+                            <%= activePeer !=null ? activePeer.getOpenSockets().size() : 0 %>
+                          </span>
+                        </div>
+                        <div class="info-item">
+                          <span class="info-label">Active Connections:</span>
+                          <span class="info-value">
+                            <%= activePeer !=null ? activePeer.getActiveConnections().size() : 0 %>
+                          </span>
                         </div>
                       </div>
-                      
+
                       <div class="info-section">
-                        <h4>Security Settings</h4>
+                        <h4>Identity Key</h4>
                         <div class="info-item">
-                          <span class="info-label">Default Signing:</span>
-                          <span class="info-value">Enabled</span>
-                        </div>
-                        <div class="info-item">
-                          <span class="info-label">Default Encryption:</span>
-                          <span class="info-value">Disabled</span>
-                        </div>
-                      </div>
-                      
-                      <div class="info-section">
-                        <h4>Protocol Information</h4>
-                        <div class="info-item">
-                          <span class="info-label">Protocol:</span>
-                          <span class="info-value">ASAP/1.0</span>
-                        </div>
-                        <div class="info-item">
-                          <span class="info-label">Encryption:</span>
-                          <span class="info-value">E2EE Available</span>
+                          <span class="info-label">Fingerprint:</span>
+                          <span class="info-value"
+                            title="<%= activePeer != null ? activePeer.getPublicKeyFingerprint() : "" %>">
+                            <% String fp=activePeer !=null ? activePeer.getPublicKeyFingerprint() : "" ; if
+                              (fp.length()> 16) fp = fp.substring(0, 8) + "..." + fp.substring(fp.length() - 8);
+                              %>
+                              <%= fp %>
+                          </span>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+          </div>
           </div>
           <script src="js/messenger.js?v=13"></script>
+          <div id="create-channel-form" class="modal hidden"
+            style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5);">
+            <div class="modal-content"
+              style="background:var(--bg-card); margin:10% auto; padding:20px; border-radius:8px; width:90%; max-width:400px; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+              <div class="modal-header"
+                style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:10px; margin-bottom:20px;">
+                <h3 style="margin:0;">Create Channel</h3>
+                <button onclick="hideCreateChannelModal()"
+                  style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-muted);">&times;</button>
+              </div>
+              <div class="modal-body">
+                <div class="form-group" style="margin-bottom:15px;">
+                  <label style="display:block; margin-bottom:5px; font-weight:600;">Channel URI:</label>
+                  <input type="text" id="new-channel-uri" class="form-control" placeholder="e.g. shark://my-channel"
+                    style="width:100%; padding:8px; border:1px solid var(--border-color); border-radius:4px;">
+                </div>
+                <div class="form-group" style="margin-bottom:15px;">
+                  <label style="display:block; margin-bottom:5px; font-weight:600;">Name (optional):</label>
+                  <input type="text" id="new-channel-name" class="form-control" placeholder="My Channel"
+                    style="width:100%; padding:8px; border:1px solid var(--border-color); border-radius:4px;">
+                </div>
+              </div>
+              <div class="modal-footer"
+                style="display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--border-color); padding-top:15px;">
+                <button onclick="hideCreateChannelModal()" class="btn-secondary">Cancel</button>
+                <button onclick="createChannel()" class="btn-primary">Create</button>
+              </div>
+            </div>
+          </div>
+          <script src="js/messenger.js?v=14"></script>
         </body>
 
         </html>

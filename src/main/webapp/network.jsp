@@ -92,7 +92,8 @@
                     <div class="page-container">
                         <h1 class="page-title" style="margin-bottom: 24px;">Network Overview</h1>
 
-                        <!-- Hub Connections -->
+                        <!-- Hub Connections (Future Feature - Not Yet Implemented) -->
+                        <!--
                         <div class="card network-section">
                             <div class="section-title">Hub Connections</div>
                             <div class="status-line">
@@ -105,6 +106,7 @@
                                 <button class="btn-secondary" onclick="alert('Hub sync triggered')">Sync Hub</button>
                             </div>
                         </div>
+                        -->
 
                         <!-- Direct TCP Connections -->
                         <div class="card network-section">
@@ -191,7 +193,8 @@
 
                 const peerId = window.currentActivePeerId;
 
-                // Load Hub Status
+                // Load Hub Status (Future Feature - Commented Out)
+                /*
                 fetch("/snm-webapp/api/peer/status/" + peerId)
                     .then(r => r.json())
                     .then(data => {
@@ -203,6 +206,8 @@
                                 : "No hubs connected. System is in P2P mode.";
                         }
                     });
+                */
+
 
                 // Load TCP Ports
                 fetch('/snm-webapp/api/tcp/list', {

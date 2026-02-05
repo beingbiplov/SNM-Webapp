@@ -20,8 +20,5 @@
             <span class="nav-icon">⚙️</span> Settings
         </a>
 
-        <div class="footer-info">
-            <p>ASAP Protocol v1.0</p>
-            <p>Secure & Decentralized</p>
-        </div>
+
     </nav>

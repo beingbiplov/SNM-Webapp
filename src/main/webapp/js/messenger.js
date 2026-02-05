@@ -35,10 +35,11 @@ async function loadChannels() {
         const data = await response.json();
         console.log('Channels data:', data);
 
-        // Keep the header
+        // Keep the header with create button
         container.innerHTML = `
-            <div class="channels-header">
+            <div class="channels-header" style="display:flex; align-items:center; justify-content:space-between;">
                 <h3>Channels</h3>
+                <button class="btn-icon-small" onclick="showCreateChannelModal()" title="Create Channel">+</button>
             </div>
             <div class="channel-list">
         `;
@@ -58,6 +59,9 @@ async function loadChannels() {
                     </div>
                     <div class="channel-meta">
                         <div class="channel-badge">${channel.messages}</div>
+                        <button onclick="deleteChannel('${channel.uri}', event)" title="Delete Channel" class="btn-delete-channel">
+                            ×
+                        </button>
                     </div>
                 `;
                 container.querySelector('.channel-list').appendChild(item);
@@ -288,10 +292,10 @@ async function sendMessage() {
         if (response.ok) {
             console.log('Message sent:', result);
             input.value = ''; // Clear input
-            
+
             // Show success feedback
             showSendSuccess(result);
-            
+
             // Reload messages to see the new one
             setTimeout(() => {
                 loadMessages(currentChannelState.uri);
@@ -311,10 +315,10 @@ async function sendMessage() {
 function showSendSuccess(result) {
     const sendBtn = document.getElementById('send-btn');
     const originalText = sendBtn.textContent;
-    
+
     sendBtn.textContent = '✓ Sent!';
     sendBtn.style.background = 'var(--green)';
-    
+
     setTimeout(() => {
         sendBtn.textContent = originalText;
         sendBtn.style.background = '';
@@ -329,11 +333,11 @@ async function loadPersonsForRecipient() {
 
         const data = await response.json();
         const select = document.getElementById('message-receiver');
-        
+
         if (select && data.persons && data.persons.length > 0) {
             // Clear existing options except "Anyone"
             select.innerHTML = '<option value="ANY_SHARKNET_PEER">Anyone</option>';
-            
+
             data.persons.forEach(person => {
                 const option = document.createElement('option');
                 option.value = person.name;

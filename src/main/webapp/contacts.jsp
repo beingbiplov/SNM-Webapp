@@ -35,13 +35,13 @@
                                         <th>Peer ID / Name</th>
                                         <th>Certificate Status</th>
                                         <th>Connection Type</th>
-                                        <th>Last Seen</th>
+
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="contactsTableBody">
                                     <tr>
-                                        <td colspan="6"
+                                        <td colspan="5"
                                             style="text-align:center; padding:20px; color:var(--text-muted);">
                                             Loading peers...
                                         </td>
@@ -65,7 +65,7 @@
                     tableBody.innerHTML = ''; // Clear loading message
 
                     if (peers.length === 0) {
-                        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">No peers found. Create one via API!</td></tr>';
+                        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;">No peers found. Create one via API!</td></tr>';
                         return;
                     }
 
@@ -87,7 +87,7 @@
                             '</td>' +
                             '<td><span class="badge badge-blue">Self-Signed</span></td>' +
                             '<td>' + connType + '</td>' +
-                            '<td>Just now</td>' +
+
                             '<td style="display:flex; gap:8px;">' +
                             (peer.active
                                 ? '<button class="btn-secondary" onclick="stopPeer(\'' + peer.peerId + '\')">Stop Peer</button>'
@@ -101,7 +101,7 @@
 
                 } catch (err) {
                     console.error(err);
-                    tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">Error loading peers. Ensure backend is running.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Error loading peers. Ensure backend is running.</td></tr>';
                 }
             }
 

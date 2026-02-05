@@ -16,7 +16,7 @@ function loadPeerStatus() {
         })
         .catch(err => {
             console.error('Failed to load peer status:', err);
-            document.getElementById('peer-status-content').innerHTML = 
+            document.getElementById('peer-status-content').innerHTML =
                 '<div style="color: red; text-align: center;">Failed to load peer status</div>';
         });
 }
@@ -24,7 +24,7 @@ function loadPeerStatus() {
 function displayPeerStatus(data) {
     const peerInfo = data.peerInfo || {};
     const content = document.getElementById('peer-status-content');
-    
+
     content.innerHTML = `
         <div class="stat-row">
             <span>Peer Name:</span>
@@ -42,13 +42,16 @@ function displayPeerStatus(data) {
 }
 
 function displayAppSettings(settings) {
-    document.getElementById('rememberNewHubConnections').checked = settings.rememberNewHubConnections || false;
-    document.getElementById('hubReconnect').checked = settings.hubReconnect || false;
+    const rememberEl = document.getElementById('rememberNewHubConnections');
+    if (rememberEl) rememberEl.checked = settings.rememberNewHubConnections || false;
+
+    const reconnectEl = document.getElementById('hubReconnect');
+    if (reconnectEl) reconnectEl.checked = settings.hubReconnect || false;
 }
 
 function displayPKIStatus(pkiStatus) {
     const content = document.getElementById('pki-status-content');
-    
+
     content.innerHTML = `
         <div class="stat-row">
             <span>Known Persons:</span>
@@ -69,7 +72,7 @@ function displayNetworkStatus(data) {
     const hubStatus = data.hubConnections || {};
     const encounterStatus = data.encounterStatus || {};
     const content = document.getElementById('network-status-content');
-    
+
     content.innerHTML = `
         <div class="stat-row">
             <span>Connected Hubs:</span>
@@ -87,15 +90,18 @@ function displayNetworkStatus(data) {
 }
 
 function saveSettings() {
+    const rememberEl = document.getElementById('rememberNewHubConnections');
+    const reconnectEl = document.getElementById('hubReconnect');
+
     const newSettings = {
-        rememberNewHubConnections: document.getElementById('rememberNewHubConnections').checked,
-        hubReconnect: document.getElementById('hubReconnect').checked
+        rememberNewHubConnections: rememberEl ? rememberEl.checked : false,
+        hubReconnect: reconnectEl ? reconnectEl.checked : false
     };
 
     // Note: Backend has setRememberNewHubConnections() and setHubReconnect() methods
     // but no API endpoint to call them. Settings are session-based only.
     alert('Settings updated for current session! (Note: Persistence would require backend API)');
-    
+
     // Update current settings for display
     currentSettings = newSettings;
 }
@@ -104,8 +110,8 @@ function saveSettings() {
 window.addEventListener('peerReady', () => loadPeerStatus());
 
 // Fallback if peer was already ready
-setTimeout(() => { 
-    if (window.currentActivePeerId) loadPeerStatus(); 
+setTimeout(() => {
+    if (window.currentActivePeerId) loadPeerStatus();
 }, 500);
 
 // Auto-refresh every 30 seconds

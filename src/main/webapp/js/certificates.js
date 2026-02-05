@@ -99,7 +99,7 @@ async function refreshDataSilently() {
     try {
         // Refresh pending credentials
         await loadPendingCredentials();
-        
+
         // Refresh certificates with caching
         await loadCertificates(true);
     } catch (error) {
@@ -132,13 +132,13 @@ document.addEventListener('DOMContentLoaded', function () {
     setInterval(() => {
         const importModal = document.getElementById('import-modal');
         const detailsModal = document.getElementById('details-modal');
-        
+
         // Only refresh if modals are not visible AND enough time has passed
         const now = Date.now();
         if ((!importModal || importModal.style.display === 'none') &&
             (!detailsModal || detailsModal.style.display === 'none') &&
             (now - lastRefreshTime >= REFRESH_INTERVAL)) {
-            
+
             lastRefreshTime = now;
             refreshDataSilently();
         }
@@ -272,21 +272,21 @@ async function loadTrustLevel(index, subjectId) {
         updateTrustBadge(index, cached);
         return;
     }
-    
+
     try {
         const response = await fetch(`/snm-webapp/api/pki/identityAssurance?subjectId=${encodeURIComponent(subjectId)}`);
         if (response.ok) {
             const data = await response.json();
             const trustLevel = data.identityAssuranceText || data.identityAssurance || 'Unknown';
             const trustBadge = getTrustBadgeClass(data.identityAssurance);
-            
+
             // Cache the result
             trustLevelCache.set(subjectId, {
                 level: trustLevel,
                 badgeClass: trustBadge,
                 iaValue: data.identityAssurance
             });
-            
+
             updateTrustBadge(index, trustLevelCache.get(subjectId));
         }
     } catch (error) {
@@ -312,7 +312,7 @@ async function loadPendingCredentials() {
         const response = await fetch('/snm-webapp/api/pki/pendingCredentials');
         if (response.ok) {
             const data = await response.json();
-            pendingCredentials = data.credentials || [];
+            pendingCredentials = data.pendingCredentials || [];
             displayPendingCredentials();
         }
     } catch (error) {
@@ -334,14 +334,23 @@ function displayPendingCredentials() {
 
     container.innerHTML = '';
     pendingCredentials.forEach((cred, index) => {
+        const sender = (cred.credential && cred.credential.name) ? cred.credential.name :
+            ((cred.credential && cred.credential.id) ? cred.credential.id : 'Unknown Sender');
+
         const credDiv = document.createElement('div');
         credDiv.className = 'pending-credential-item';
         credDiv.style.cssText = 'padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; background: var(--bg-card);';
+
+        // We use the index from the object as the ID for action
+        // But the previous code passed the loop index into acceptCredential(index)
+        // Check acceptCredential implementation: it uses pendingCredentials[index].index
+        // So passing loop index is correct IF acceptCredential uses it to lookup the object in the array.
+
         credDiv.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <div style="font-weight: 600;">${cred.sender || 'Unknown Sender'}</div>
-                    <div style="color: var(--text-muted); font-size: 0.9rem;">${cred.message || 'No message'}</div>
+                    <div style="font-weight: 600;">${sender}</div>
+                    <div style="color: var(--text-muted); font-size: 0.9rem;">Standard Credential Request</div>
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <button class="btn-secondary" onclick="acceptCredential(${index})">Accept</button>
@@ -407,7 +416,8 @@ function showCertificateDetails(index) {
         </div>
     `;
 
-    document.getElementById('details-modal').style.display = 'block';
+    document.getElementById('details-modal').style.display = '';
+    document.getElementById('details-modal').classList.remove('hidden');
 }
 
 // Load trust level for certificate details (with caching)
@@ -417,21 +427,21 @@ async function loadTrustLevelForDetails(subjectId) {
         updateDetailsTrustBadge(trustLevelCache.get(subjectId));
         return;
     }
-    
+
     try {
         const response = await fetch(`/snm-webapp/api/pki/identityAssurance?subjectId=${encodeURIComponent(subjectId)}`);
         if (response.ok) {
             const data = await response.json();
             const trustLevel = data.identityAssuranceText || 'Unknown';
             const trustBadge = getTrustBadgeClass(data.identityAssurance);
-            
+
             // Cache the result
             trustLevelCache.set(subjectId, {
                 level: trustLevel,
                 badgeClass: trustBadge,
                 iaValue: data.identityAssurance
             });
-            
+
             updateDetailsTrustBadge(trustLevelCache.get(subjectId));
         }
     } catch (error) {
@@ -473,7 +483,7 @@ async function acceptCredential(index) {
         if (response.ok) {
             // Clear cache since trust levels may change
             trustLevelCache.clear();
-            
+
             await loadPendingCredentials();
             await loadCertificates();
             alert('Credential accepted successfully!');
@@ -514,10 +524,8 @@ async function sendCredentials() {
     // The backend does not use the message field, so we ignore it here or just log it.
     // const message = document.getElementById('import-message').value.trim();
 
-    if (!peerName) {
-        alert('Please enter a peer name or ID');
-        return;
-    }
+    // If peerName is empty, it will be treated as a broadcast by the backend.
+
 
     try {
         // We pass the name/ID as 'targetPeerId'. If it's a name, it might fail if backend expects ID.
@@ -573,7 +581,7 @@ async function revokeCertificate(subjectId) {
         if (response.ok) {
             const data = await response.json();
             alert('Certificate revoked successfully!');
-            
+
             // Clear cache and refresh
             trustLevelCache.clear();
             await loadCertificates(); // Refresh the certificate list
@@ -592,7 +600,7 @@ function refreshCertificates() {
     // Clear cache to force fresh data
     trustLevelCache.clear();
     lastRefreshTime = 0; // Reset refresh timer
-    
+
     loadCertificates();
     loadPendingCredentials();
 }
@@ -641,12 +649,12 @@ window.onclick = function (event) {
 // Advanced Filtering Functions
 function onFilterTypeChange() {
     const filterType = document.getElementById('filter-type').value;
-    
+
     // Hide all filter sections
     document.getElementById('issuer-filter').style.display = 'none';
     document.getElementById('subject-filter').style.display = 'none';
     document.getElementById('trust-filter').style.display = 'none';
-    
+
     // Show relevant filter section
     if (filterType === 'issuer') {
         document.getElementById('issuer-filter').style.display = 'block';
@@ -663,12 +671,12 @@ async function loadIssuerOptions() {
     try {
         const response = await fetch('/snm-webapp/api/persons');
         if (!response.ok) return;
-        
+
         const data = await response.json();
         const select = document.getElementById('issuer-select');
-        
+
         select.innerHTML = '<option value="">All Issuers</option>';
-        
+
         if (data.persons && data.persons.length > 0) {
             data.persons.forEach(person => {
                 const option = document.createElement('option');
@@ -686,12 +694,12 @@ async function loadSubjectOptions() {
     try {
         const response = await fetch('/snm-webapp/api/persons');
         if (!response.ok) return;
-        
+
         const data = await response.json();
         const select = document.getElementById('subject-select');
-        
+
         select.innerHTML = '<option value="">All Subjects</option>';
-        
+
         if (data.persons && data.persons.length > 0) {
             data.persons.forEach(person => {
                 const option = document.createElement('option');
@@ -707,15 +715,15 @@ async function loadSubjectOptions() {
 
 async function applyFilter() {
     const filterType = document.getElementById('filter-type').value;
-    
+
     if (filterType === 'all') {
         clearFilter();
         return;
     }
-    
+
     let apiUrl = '/snm-webapp/api/pki/certificates';
     let params = new URLSearchParams();
-    
+
     if (filterType === 'issuer') {
         apiUrl = '/snm-webapp/api/pki/certsByIssuer';
         const issuerId = document.getElementById('issuer-select').value;
@@ -728,19 +736,19 @@ async function applyFilter() {
         filterByTrustLevel();
         return;
     }
-    
+
     try {
         const url = params.toString() ? `${apiUrl}?${params.toString()}` : apiUrl;
         const response = await fetch(url);
-        
+
         if (!response.ok) throw new Error('Failed to apply filter');
-        
+
         const data = await response.json();
         certificates = data.certificates || [];
         displayCertificates();
-        
+
         showFilterStatus(filterType);
-        
+
     } catch (error) {
         console.error('Error applying filter:', error);
         alert('Failed to apply filter: ' + error.message);
@@ -749,28 +757,28 @@ async function applyFilter() {
 
 function filterByTrustLevel() {
     const trustLevel = document.getElementById('trust-select').value;
-    
+
     if (!trustLevel) {
         displayCertificates();
         return;
     }
-    
+
     const filtered = certificates.filter(cert => {
         return cert.trustLevel === parseInt(trustLevel);
     });
-    
+
     displayFilteredCertificates(filtered);
     showFilterStatus('trust');
 }
 
 function displayFilteredCertificates(filteredCerts) {
     const tbody = document.getElementById('certificates-tbody');
-    
+
     if (filteredCerts.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="loading-state">No certificates found with current filter</td></tr>';
         return;
     }
-    
+
     tbody.innerHTML = filteredCerts.map(cert => createCertificateRow(cert)).join('');
 }
 
@@ -779,18 +787,18 @@ function clearFilter() {
     document.getElementById('issuer-filter').style.display = 'none';
     document.getElementById('subject-filter').style.display = 'none';
     document.getElementById('trust-filter').style.display = 'none';
-    
+
     loadCertificates();
     hideFilterStatus();
 }
 
 function showFilterStatus(filterType) {
     hideFilterStatus();
-    
+
     const status = document.createElement('span');
     status.className = 'filter-status active';
     status.textContent = `Filter: ${filterType.charAt(0).toUpperCase() + filterType.slice(1)}`;
-    
+
     const header = document.querySelector('.trusted-section .card-title');
     if (header) {
         header.appendChild(status);
@@ -819,16 +827,16 @@ function hideRevokeModal() {
 
 async function revokeCertificate() {
     const subjectId = document.getElementById('revoke-subject-id').value;
-    
+
     if (!subjectId) {
         alert('Subject ID is required for revocation');
         return;
     }
-    
+
     if (!confirm('Are you sure you want to revoke this certificate? This action cannot be undone.')) {
         return;
     }
-    
+
     try {
         const response = await fetch('/snm-webapp/api/pki/revokeCertificate', {
             method: 'POST',
@@ -837,9 +845,9 @@ async function revokeCertificate() {
             },
             body: `subjectId=${encodeURIComponent(subjectId)}`
         });
-        
+
         const result = await response.json();
-        
+
         if (response.ok) {
             alert('Certificate revoked successfully!');
             hideRevokeModal();
@@ -847,7 +855,7 @@ async function revokeCertificate() {
         } else {
             alert('Failed to revoke certificate: ' + (result.msg || 'Unknown error'));
         }
-        
+
     } catch (error) {
         console.error('Error revoking certificate:', error);
         alert('Error revoking certificate. Please try again.');
