@@ -1,7 +1,8 @@
 # SharkNet Messenger Web App
 
-This project exposes core SharkNet Messenger functionality (peer lifecycle, TCP connections, status)
-via REST APIs and runs on Apache Tomcat.
+The SharkNet Manager (SNM) Web Application is a web-based management layer built on top of the SharkNet peer-to-peer communication framework. Its primary goal is to expose core SharkNet functionality, traditionally accessed via a command-line interface, through a structured, persistent, and user-friendly web interface and REST API.
+
+The application enables users to create, manage, and switch between SharkNet peers, interact with ASAP hubs, inspect messaging channels, and control runtime behavior without directly invoking CLI commands. It bridges the gap between SharkNet’s low-level runtime model and modern web-based system interaction.
 
 ---
 
