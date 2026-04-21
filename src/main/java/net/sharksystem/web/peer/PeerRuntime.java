@@ -33,7 +33,8 @@ import net.sharksystem.app.messenger.SharkNetMessengerComponent;
 import net.sharksystem.app.messenger.SharkNetMessengerComponentFactory;
 
 /**
- * Represents one SharkNet peer in the web application, extended with messenger, PKI,
+ * Represents one SharkNet peer in the web application, extended with messenger,
+ * PKI,
  * encounters, hub management, and status tracking for the servlet.
  */
 public final class PeerRuntime {
@@ -59,6 +60,21 @@ public final class PeerRuntime {
     // HUB tracking
     private final Map<Integer, HubConnectorDescription> connectedHubs = new HashMap<>();
     private int failedHubConnections = 0;
+
+    // Outgoing connections tracking
+    public static class ConnectionInfo {
+        public final String host;
+        public final int port;
+        public final long timestamp;
+
+        public ConnectionInfo(String host, int port) {
+            this.host = host;
+            this.port = port;
+            this.timestamp = System.currentTimeMillis();
+        }
+    }
+
+    private final List<ConnectionInfo> activeConnections = new CopyOnWriteArrayList<>();
 
     // Encounter logs
     public static class EncounterLog {
@@ -121,16 +137,14 @@ public final class PeerRuntime {
         this.pkiComponent = (SharkPKIComponent) sharkPeer.getComponent(SharkPKIComponent.class);
 
         // Messenger
-        SharkNetMessengerComponentFactory messengerFactory =
-                new SharkNetMessengerComponentFactory(this.pkiComponent);
+        SharkNetMessengerComponentFactory messengerFactory = new SharkNetMessengerComponentFactory(this.pkiComponent);
         this.sharkPeer.addComponent(messengerFactory, SharkNetMessengerComponent.class);
-        this.messengerComponent =
-                (SharkNetMessengerComponent) sharkPeer.getComponent(SharkNetMessengerComponent.class);
+        this.messengerComponent = (SharkNetMessengerComponent) sharkPeer.getComponent(SharkNetMessengerComponent.class);
 
         // Encounter manager
         ASAPConnectionHandler handler = (ASAPConnectionHandler) asapPeer;
-        ASAPEncounterManagerImpl encounterMgr =
-                new ASAPEncounterManagerImpl(handler, peerID, syncWithOthersInSeconds * 100L);
+        ASAPEncounterManagerImpl encounterMgr = new ASAPEncounterManagerImpl(handler, peerID,
+                syncWithOthersInSeconds * 100L);
 
         this.encounterManager = encounterMgr;
         this.encounterManagerAdmin = encounterMgr;
@@ -145,7 +159,7 @@ public final class PeerRuntime {
             sharkPeer.start(asapPeer);
             active = true;
 
-            //Add CredentialReceivedListener for this peer
+            // Add CredentialReceivedListener for this peer
             this.credentialListener = new CredentialReceivedListener(this);
             this.pkiComponent.setSharkCredentialReceivedListener(credentialListener);
         }
@@ -212,8 +226,17 @@ public final class PeerRuntime {
         failedHubConnections++;
     }
 
-    public int getConnectedHubsCount() { return connectedHubs.size(); }
-    public int getFailedHubConnectionsCount() { return failedHubConnections; }
+    public int getConnectedHubsCount() {
+        return connectedHubs.size();
+    }
+
+    public int getFailedHubConnectionsCount() {
+        return failedHubConnections;
+    }
+
+    public List<ConnectionInfo> getActiveConnections() {
+        return activeConnections;
+    }
 
     // Encounter methods
     public void encounterStarted(CharSequence peerID, ASAPEncounterConnectionType type) {
@@ -227,14 +250,26 @@ public final class PeerRuntime {
         }
     }
 
-    public Map<CharSequence, List<EncounterLog>> getEncounterLogs() { return encounterLogs; }
+    public Map<CharSequence, List<EncounterLog>> getEncounterLogs() {
+        return encounterLogs;
+    }
 
     // App settings
-    public boolean getRememberNewHubConnections() { return rememberNewHubConnections; }
-    public void setRememberNewHubConnections(boolean value) { this.rememberNewHubConnections = value; }
+    public boolean getRememberNewHubConnections() {
+        return rememberNewHubConnections;
+    }
 
-    public boolean getHubReconnect() { return hubReconnect; }
-    public void setHubReconnect(boolean value) { this.hubReconnect = value; }
+    public void setRememberNewHubConnections(boolean value) {
+        this.rememberNewHubConnections = value;
+    }
+
+    public boolean getHubReconnect() {
+        return hubReconnect;
+    }
+
+    public void setHubReconnect(boolean value) {
+        this.hubReconnect = value;
+    }
 
     // PKI summary helpers
     public int getNumberOfPersons() {
@@ -252,8 +287,7 @@ public final class PeerRuntime {
 
         try {
             return ASAPCryptoAlgorithms.getFingerprint(
-                    pkiComponent.getASAPKeyStore().getPublicKey()
-            );
+                    pkiComponent.getASAPKeyStore().getPublicKey());
         } catch (Exception e) {
             return "unavailable";
         }
@@ -261,9 +295,11 @@ public final class PeerRuntime {
 
     /**
      * Open a TCP connection on the specified port.
+     * 
      * @param port
      * @throws IOException
-     * @throws IllegalStateException if the peer is not active or port is already in use
+     * @throws IllegalStateException if the peer is not active or port is already in
+     *                               use
      */
     public synchronized void openTCPConnection(int port) throws IOException {
         if (!this.isActive()) {
@@ -274,18 +310,17 @@ public final class PeerRuntime {
             throw new IllegalStateException("Port already in use");
         }
 
-        TCPServerSocketAcceptor acceptor =
-                new TCPServerSocketAcceptor(
-                        port,
-                        this.encounterManager,
-                        true
-                );
+        TCPServerSocketAcceptor acceptor = new TCPServerSocketAcceptor(
+                port,
+                this.encounterManager,
+                true);
 
         openSockets.put(port, acceptor);
     }
 
     /**
      * Close the TCP connection on the specified port.
+     * 
      * @param port
      * @throws IOException
      * @throws IllegalStateException if the peer is not active or port is not open
@@ -319,10 +354,12 @@ public final class PeerRuntime {
 
     /**
      * Connect to a TCP host and port.
+     * 
      * @param host
      * @param port
      * @throws IOException
-     * @throws IllegalStateException if the peer is not active or same-process connection attempted
+     * @throws IllegalStateException if the peer is not active or same-process
+     *                               connection attempted
      */
     public synchronized void connectTCP(String host, int port) throws IOException {
         if (!this.isActive()) {
@@ -333,8 +370,7 @@ public final class PeerRuntime {
         if (host.equalsIgnoreCase("127.0.0.1") || host.equalsIgnoreCase("localhost")) {
             if (openSockets.containsKey(port)) {
                 throw new IllegalStateException(
-                        "Attempt to establish a connection to same peer refused"
-                );
+                        "Attempt to establish a connection to same peer refused");
             }
         }
 
@@ -343,10 +379,11 @@ public final class PeerRuntime {
         encounterManager.handleEncounter(
                 StreamPairImpl.getStreamPair(
                         socket.getInputStream(),
-                        socket.getOutputStream()
-                ),
-                ASAPEncounterConnectionType.INTERNET
-        );
+                        socket.getOutputStream()),
+                ASAPEncounterConnectionType.INTERNET);
+
+        // Track this connection
+        activeConnections.add(new ConnectionInfo(host, port));
     }
 
     private final List<CredentialMessage> pendingCredentialMessages = new CopyOnWriteArrayList<>();
@@ -362,8 +399,7 @@ public final class PeerRuntime {
     /** method to accept or refuse a pending credential message by its index */
     private CredentialMessage actionOnPendingCredentialMessageOnIndex(
             int index,
-            boolean accept
-    ) throws ASAPSecurityException, IOException {
+            boolean accept) throws ASAPSecurityException, IOException {
 
         if (index < 1) {
             throw new IllegalArgumentException("minimal index is 1");
@@ -372,15 +408,13 @@ public final class PeerRuntime {
         if (this.pendingCredentialMessages.size() < index) {
             throw new IllegalArgumentException(
                     "index " + index + " exceeds maximum of "
-                            + this.pendingCredentialMessages.size()
-            );
+                            + this.pendingCredentialMessages.size());
         }
 
         // convert to 0-based index
         index--;
 
-        CredentialMessage actioned =
-                this.pendingCredentialMessages.remove(index);
+        CredentialMessage actioned = this.pendingCredentialMessages.remove(index);
 
         if (accept) {
             try {

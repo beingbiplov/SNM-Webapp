@@ -22,9 +22,9 @@ install_jar() {
     -Dpackaging=jar
 }
 
-install_jar ASAPHub.jar            net.sharksystem asaphub          0.1
-install_jar ASAPJava.jar           net.sharksystem asapjava         0.1
-install_jar SharkPKI.jar           net.sharksystem sharkpki         0.1
-install_jar SharkPeer.jar          net.sharksystem sharkpeer        0.1
+install_jar ASAPHub.jar            net.sharksystem ASAPHub          0.1.0
+install_jar ASAPJava.jar           net.sharksystem ASAPJava         0.1.0
+install_jar SharkPKI.jar           net.sharksystem SharkPKI         0.1.0
+install_jar SharkPeer.jar          net.sharksystem SharkPeer        0.1.0
 
 echo "✔ Shark libraries installed successfully"

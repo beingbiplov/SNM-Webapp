@@ -17,7 +17,7 @@ import java.io.IOException;
  * POST /api/start/{peerId}
  * POST /api/stop/{peerId}
  */
-@WebServlet(urlPatterns = {"/api/start/*", "/api/stop/*"})
+@WebServlet(urlPatterns = { "/api/start/*", "/api/stop/*" })
 public class PeerControlServlet extends HttpServlet {
 
     private final PeerRuntimeManager manager = PeerRuntimeManager.getInstance();
@@ -27,7 +27,7 @@ public class PeerControlServlet extends HttpServlet {
             throws IOException {
 
         String servletPath = req.getServletPath(); // /api/start or /api/stop
-        String pathInfo = req.getPathInfo();       // /{peerId}
+        String pathInfo = req.getPathInfo(); // /{peerId}
 
         if (pathInfo == null || pathInfo.length() <= 1) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
