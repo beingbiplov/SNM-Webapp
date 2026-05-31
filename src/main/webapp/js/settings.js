@@ -1,4 +1,4 @@
-// settings.js - Settings page JavaScript
+// settings.js - Settings page JavaScript (Tailwind Mobile Optimized)
 
 let currentSettings = {};
 
@@ -6,72 +6,77 @@ function loadPeerStatus() {
     if (!window.currentActivePeerId) return;
 
     const peerId = encodeURIComponent(window.currentActivePeerId);
-    console.log('Loading status for peer:', peerId);
 
     fetch(`/snm-webapp/api/peer/status/${peerId}`)
         .then(response => {
             if (!response.ok) {
-                return response.text().then(text => { throw new Error(`Status ${response.status}: ${text}`) });
+                return response.text().then(text => {
+                    throw new Error(`Status ${response.status}: ${text}`);
+                });
             }
             return response.json();
         })
         .then(data => {
             displayPeerStatus(data);
-            displayAppSettings(data.appSettings || {});
             displayPKIStatus(data.pkiStatus || {});
             displayNetworkStatus(data);
-            currentSettings = data.appSettings || {};
+            loadApplicationSettings(data.appSettings || {});
         })
         .catch(err => {
             console.error('Failed to load peer status:', err);
-            document.getElementById('peer-status-content').innerHTML =
-                `<div style="color: red; text-align: center;">Failed to load peer status: ${err.message}</div>`;
+            const content = document.getElementById('peer-status-content');
+            if (content) {
+                content.innerHTML = `<div class="text-red-500 text-center text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800">Failed to load peer status: ${err.message}</div>`;
+            }
         });
 }
 
 function displayPeerStatus(data) {
     const peerInfo = data.peerInfo || {};
     const content = document.getElementById('peer-status-content');
+    if (!content) return;
+
+    const activeBadge = peerInfo.active
+        ? '<span class="px-2.5 py-0.5 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 text-xs font-bold rounded-full">Active</span>'
+        : '<span class="px-2.5 py-0.5 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 text-xs font-bold rounded-full">Inactive</span>';
+
 
     content.innerHTML = `
-        <div class="stat-row">
-            <span>Peer Name:</span>
-            <span style="font-family: var(--font-mono); font-weight: 600;">${peerInfo.name || 'Unknown'}</span>
-        </div>
-        <div class="stat-row">
-            <span>Peer ID:</span>
-            <span style="font-family: var(--font-mono); font-size: 0.8rem;">${peerInfo.id || 'Unknown'}</span>
-        </div>
-        <div class="stat-row">
-            <span>Status:</span>
-            <span class="badge ${peerInfo.active ? 'badge-green' : 'badge-gray'}">${peerInfo.active ? 'Active' : 'Inactive'}</span>
+        <div class="flex flex-col gap-3 text-sm">
+            <div class="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center py-2 border-b border-gray-50 dark:border-gray-700/50 gap-1">
+                <span class="text-gray-600 dark:text-gray-400 font-medium">Peer Name:</span>
+                <span class="font-bold text-gray-900 dark:text-white break-all">${peerInfo.name || 'Unknown'}</span>
+            </div>
+            <div class="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center py-2 border-b border-gray-50 dark:border-gray-700/50 gap-1">
+                <span class="text-gray-600 dark:text-gray-400 font-medium">Peer ID:</span>
+                <span class="font-mono text-xs bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-300 px-2 py-1 rounded break-all w-full sm:w-auto text-left sm:text-right mt-1 sm:mt-0">${peerInfo.id || 'Unknown'}</span>
+            </div>
+            <div class="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center py-2 gap-1">
+                <span class="text-gray-600 dark:text-gray-400 font-medium">Status:</span>
+                <div class="mt-1 sm:mt-0">${activeBadge}</div>
+            </div>
         </div>
     `;
 }
 
-function displayAppSettings(settings) {
-    const rememberEl = document.getElementById('rememberNewHubConnections');
-    if (rememberEl) rememberEl.checked = settings.rememberNewHubConnections || false;
-
-    const reconnectEl = document.getElementById('hubReconnect');
-    if (reconnectEl) reconnectEl.checked = settings.hubReconnect || false;
-}
-
 function displayPKIStatus(pkiStatus) {
     const content = document.getElementById('pki-status-content');
+    if (!content) return;
 
     content.innerHTML = `
-        <div class="stat-row">
-            <span>Known Persons:</span>
-            <span style="font-weight: 600;">${pkiStatus.persons || 0}</span>
-        </div>
-        <div class="stat-row">
-            <span>Certificates:</span>
-            <span style="font-weight: 600;">${pkiStatus.certificates || 0}</span>
-        </div>
-        <div class="stat-row">
-            <span>Public Key Fingerprint:</span>
-            <span style="font-family: var(--font-mono); font-size: 0.7rem; word-break: break-all;">${pkiStatus.publicKeyFingerprint || 'Not available'}</span>
+        <div class="flex flex-col gap-3 text-sm w-full">
+            <div class="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center py-2 border-b border-gray-50 dark:border-gray-700/50 gap-1">
+                <span class="text-gray-600 dark:text-gray-400 font-medium">Known Persons:</span>
+                <span class="font-bold text-gray-900 dark:text-white">${pkiStatus.persons || 0}</span>
+            </div>
+            <div class="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center py-2 border-b border-gray-50 dark:border-gray-700/50 gap-1">
+                <span class="text-gray-600 dark:text-gray-400 font-medium">Certificates:</span>
+                <span class="font-bold text-gray-900 dark:text-white">${pkiStatus.certificates || 0}</span>
+            </div>
+            <div class="flex flex-col py-2 gap-2 w-full">
+                <span class="text-gray-600 dark:text-gray-400 font-medium">Public Key Fingerprint:</span>
+                <span class="font-mono text-xs break-all bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 p-2.5 rounded w-full border border-gray-200 dark:border-gray-800">${pkiStatus.publicKeyFingerprint || 'Not available'}</span>
+            </div>
         </div>
     `;
 }
@@ -80,49 +85,64 @@ function displayNetworkStatus(data) {
     const hubStatus = data.hubConnections || {};
     const encounterStatus = data.encounterStatus || {};
     const content = document.getElementById('network-status-content');
+    if (!content) return;
 
     content.innerHTML = `
-        <div class="stat-row">
-            <span>Connected Hubs:</span>
-            <span style="font-weight: 600;">${hubStatus.hubsConnected || 0}</span>
-        </div>
-        <div class="stat-row">
-            <span>Failed Hub Connections:</span>
-            <span style="color: var(--red);">${hubStatus.failedToConnect || 0}</span>
-        </div>
-        <div class="stat-row">
-            <span>Encounters Tracked:</span>
-            <span style="font-weight: 600;">${encounterStatus.encountersTracked || 0}</span>
+        <div class="flex flex-col gap-3 text-sm">
+            <div class="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center py-2 border-b border-gray-50 dark:border-gray-700/50 gap-1">
+                <span class="text-gray-600 dark:text-gray-400 font-medium">Connected Hubs:</span>
+                <span class="font-bold text-gray-900 dark:text-white">${hubStatus.hubsConnected || 0}</span>
+            </div>
+            <div class="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center py-2 border-b border-gray-50 dark:border-gray-700/50 gap-1">
+                <span class="text-gray-600 dark:text-gray-400 font-medium">Failed Hub Connections:</span>
+                <span class="font-bold text-red-600 dark:text-red-400">${hubStatus.failedToConnect || 0}</span>
+            </div>
+            <div class="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center py-2 gap-1">
+                <span class="text-gray-600 dark:text-gray-400 font-medium">Encounters Tracked:</span>
+                <span class="font-bold text-gray-900 dark:text-white">${encounterStatus.encountersTracked || 0}</span>
+            </div>
         </div>
     `;
 }
 
-function saveSettings() {
+function loadApplicationSettings(serverSettings) {
+    const mockSettings = {defaultSign: true, defaultEncrypt: false, displayName: "SharkNet_User_01"};
+
     const rememberEl = document.getElementById('rememberNewHubConnections');
+    if (rememberEl) rememberEl.checked = (serverSettings.rememberNewHubConnections !== undefined) ? serverSettings.rememberNewHubConnections : true;
+
     const reconnectEl = document.getElementById('hubReconnect');
+    if (reconnectEl) reconnectEl.checked = (serverSettings.hubReconnect !== undefined) ? serverSettings.hubReconnect : true;
 
-    const newSettings = {
-        rememberNewHubConnections: rememberEl ? rememberEl.checked : false,
-        hubReconnect: reconnectEl ? reconnectEl.checked : false
-    };
+    const signEl = document.getElementById('defaultSignMsg');
+    if (signEl) signEl.checked = mockSettings.defaultSign;
 
-    // Note: Backend has setRememberNewHubConnections() and setHubReconnect() methods
-    // but no API endpoint to call them. Settings are session-based only.
-    alert('Settings updated for current session! (Note: Persistence would require backend API)');
+    const encEl = document.getElementById('defaultEncryptMsg');
+    if (encEl) encEl.checked = mockSettings.defaultEncrypt;
 
-    // Update current settings for display
-    currentSettings = newSettings;
+    const nameEl = document.getElementById('customDisplayName');
+    if (nameEl) nameEl.value = mockSettings.displayName;
+
+    currentSettings = serverSettings;
 }
 
-// Initialize
-window.addEventListener('peerReady', () => loadPeerStatus());
+async function saveSettings() {
+    const settingsPayload = {
+        defaultSign: document.getElementById('defaultSignMsg')?.checked || false,
+        defaultEncrypt: document.getElementById('defaultEncryptMsg')?.checked || false,
+        rememberNewHubConnections: document.getElementById('rememberNewHubConnections')?.checked || false,
+        hubReconnect: document.getElementById('hubReconnect')?.checked || false,
+        displayName: document.getElementById('customDisplayName')?.value || ""
+    };
 
-// Fallback if peer was already ready
+    alert("Settings successfully saved! (Note: Persistence requires backend API)");
+    currentSettings = settingsPayload;
+}
+
+window.addEventListener('peerReady', () => loadPeerStatus());
 setTimeout(() => {
     if (window.currentActivePeerId) loadPeerStatus();
 }, 500);
-
-// Auto-refresh every 30 seconds
 setInterval(() => {
     if (window.currentActivePeerId) loadPeerStatus();
 }, 30000);
