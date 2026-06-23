@@ -1,5 +1,4 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-    <!-- We use a request attribute 'activePage' to highlight the current link -->
     <nav class="sidebar">
         <a href="index.jsp" class="nav-item ${activePage == 'messenger' ? 'active' : ''}">
             <span class="nav-icon">💬</span> Messenger
@@ -16,9 +15,10 @@
         <a href="network.jsp" class="nav-item ${activePage == 'network' ? 'active' : ''}">
             <span class="nav-icon">🌐</span> Network Status
         </a>
+        <a href="hubs.jsp" class="nav-item ${activePage == 'hubs' ? 'active' : ''}">
+            <span class="nav-icon">📡</span> ASAP Hubs
+        </a>
         <a href="settings.jsp" class="nav-item ${activePage == 'settings' ? 'active' : ''}">
             <span class="nav-icon">⚙️</span> Settings
         </a>
-
-
     </nav>

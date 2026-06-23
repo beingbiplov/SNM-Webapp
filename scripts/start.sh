@@ -25,10 +25,12 @@ echo "Starting SharkNet Web App..."
 if [ -f "$TOMCAT_HOME/bin/shutdown.sh" ]; then
   echo "Stopping Tomcat..."
   "$TOMCAT_HOME/bin/shutdown.sh" || true
-  sleep 2
+  sleep 3
 fi
 
 echo "Deploying WAR..."
+rm -rf "$TOMCAT_HOME/webapps/snm-webapp"
+rm -f "$TOMCAT_HOME/webapps/snm-webapp.war"
 cp target/$WAR "$TOMCAT_HOME/webapps/"
 
 echo "Starting Tomcat..."
