@@ -2,6 +2,11 @@
 
 let currentSettings = {};
 
+/**
+ * Loads the status of the current active peer from the backend API.
+ * Initiates the display of various status sections.
+ * @return {void}
+ */
 function loadPeerStatus() {
     if (!window.currentActivePeerId) return;
 
@@ -11,27 +16,38 @@ function loadPeerStatus() {
     fetch(`/snm-webapp/api/peer/status/${peerId}`)
         .then(response => {
             if (!response.ok) {
-                return response.text().then(text => { throw new Error(`Status ${response.status}: ${text}`) });
+                return response.text().then(text => {
+                    throw new Error(`Status ${response.status}: ${text}`);
+                });
             }
             return response.json();
         })
         .then(data => {
             displayPeerStatus(data);
-            displayAppSettings(data.appSettings || {});
             displayPKIStatus(data.pkiStatus || {});
             displayNetworkStatus(data);
-            currentSettings = data.appSettings || {};
+
+            // Load application settings with data from the server
+            loadApplicationSettings(data.appSettings || {});
         })
         .catch(err => {
             console.error('Failed to load peer status:', err);
-            document.getElementById('peer-status-content').innerHTML =
-                `<div style="color: red; text-align: center;">Failed to load peer status: ${err.message}</div>`;
+            const content = document.getElementById('peer-status-content');
+            if (content) {
+                content.innerHTML = `<div style="color: red; text-align: center;">Failed to load peer status: ${err.message}</div>`;
+            }
         });
 }
 
+/**
+ * Renders the basic peer information (Name, ID, Status).
+ * @param {Object} data - The peer status data object
+ * @return {void}
+ */
 function displayPeerStatus(data) {
     const peerInfo = data.peerInfo || {};
     const content = document.getElementById('peer-status-content');
+    if (!content) return;
 
     content.innerHTML = `
         <div class="stat-row">
@@ -49,16 +65,14 @@ function displayPeerStatus(data) {
     `;
 }
 
-function displayAppSettings(settings) {
-    const rememberEl = document.getElementById('rememberNewHubConnections');
-    if (rememberEl) rememberEl.checked = settings.rememberNewHubConnections || false;
-
-    const reconnectEl = document.getElementById('hubReconnect');
-    if (reconnectEl) reconnectEl.checked = settings.hubReconnect || false;
-}
-
+/**
+ * Renders the PKI status details.
+ * @param {Object} pkiStatus - The PKI status data object
+ * @return {void}
+ */
 function displayPKIStatus(pkiStatus) {
     const content = document.getElementById('pki-status-content');
+    if (!content) return;
 
     content.innerHTML = `
         <div class="stat-row">
@@ -76,10 +90,16 @@ function displayPKIStatus(pkiStatus) {
     `;
 }
 
+/**
+ * Renders the network connection statistics.
+ * @param {Object} data - The network status data object
+ * @return {void}
+ */
 function displayNetworkStatus(data) {
     const hubStatus = data.hubConnections || {};
     const encounterStatus = data.encounterStatus || {};
     const content = document.getElementById('network-status-content');
+    if (!content) return;
 
     content.innerHTML = `
         <div class="stat-row">
@@ -97,32 +117,91 @@ function displayNetworkStatus(data) {
     `;
 }
 
-function saveSettings() {
-    const rememberEl = document.getElementById('rememberNewHubConnections');
-    const reconnectEl = document.getElementById('hubReconnect');
+/**
+ * Populates the Application Settings UI. Merges server data with mock data
+ * for newly proposed features that might not be in the backend yet.
+ * @param {Object} serverSettings - The settings object retrieved from the server
+ * @return {void}
+ */
+function loadApplicationSettings(serverSettings) {
+    console.log("Loading application settings...");
 
-    const newSettings = {
-        rememberNewHubConnections: rememberEl ? rememberEl.checked : false,
-        hubReconnect: reconnectEl ? reconnectEl.checked : false
+    // MOCK DATA: Simulating settings for UI testing
+    const mockSettings = {
+        defaultSign: true,
+        defaultEncrypt: false,
+        displayName: "SharkNet_User_01"
     };
 
-    // Note: Backend has setRememberNewHubConnections() and setHubReconnect() methods
-    // but no API endpoint to call them. Settings are session-based only.
-    alert('Settings updated for current session! (Note: Persistence would require backend API)');
+    // Bind data to UI elements
+    const rememberEl = document.getElementById('rememberNewHubConnections');
+    if (rememberEl) rememberEl.checked = (serverSettings.rememberNewHubConnections !== undefined) ? serverSettings.rememberNewHubConnections : true;
 
-    // Update current settings for display
-    currentSettings = newSettings;
+    const reconnectEl = document.getElementById('hubReconnect');
+    if (reconnectEl) reconnectEl.checked = (serverSettings.hubReconnect !== undefined) ? serverSettings.hubReconnect : true;
+
+    const signEl = document.getElementById('defaultSignMsg');
+    if (signEl) signEl.checked = mockSettings.defaultSign;
+
+    const encEl = document.getElementById('defaultEncryptMsg');
+    if (encEl) encEl.checked = mockSettings.defaultEncrypt;
+
+    const nameEl = document.getElementById('customDisplayName');
+    if (nameEl) nameEl.value = mockSettings.displayName;
+
+    currentSettings = serverSettings;
 }
 
-// Initialize
+/**
+ * Collects data from the Application Settings UI and simulates saving to the backend.
+ * Bound to the "Save Changes" button.
+ * @return {Promise<void>} Resolves when the save operation is complete
+ */
+async function saveSettings() {
+    // Collect values from the DOM
+    const settingsPayload = {
+        defaultSign: document.getElementById('defaultSignMsg')?.checked || false,
+        defaultEncrypt: document.getElementById('defaultEncryptMsg')?.checked || false,
+        rememberNewHubConnections: document.getElementById('rememberNewHubConnections')?.checked || false,
+        hubReconnect: document.getElementById('hubReconnect')?.checked || false,
+        displayName: document.getElementById('customDisplayName')?.value || ""
+    };
+
+    console.log("Sending settings to backend:", settingsPayload);
+
+    // TODO: Uncomment the fetch request below when SettingsServlet is implemented
+    /*
+    try {
+        const response = await fetch('api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settingsPayload)
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to save settings to the server.");
+        }
+    } catch (error) {
+        console.error("Error saving settings:", error);
+        alert("Error saving settings. Check console for details.");
+        return;
+    }
+    */
+
+    // Alert user of success (mock behavior)
+    alert("Settings successfully saved! (Note: Persistence requires backend API)");
+    currentSettings = settingsPayload;
+}
+
+// Initialization Events
 window.addEventListener('peerReady', () => loadPeerStatus());
 
-// Fallback if peer was already ready
+// Fallback if the peer was already ready before the script loaded
 setTimeout(() => {
     if (window.currentActivePeerId) loadPeerStatus();
 }, 500);
 
-// Auto-refresh every 30 seconds
+// Auto-refresh status data every 30 seconds
 setInterval(() => {
     if (window.currentActivePeerId) loadPeerStatus();
 }, 30000);
